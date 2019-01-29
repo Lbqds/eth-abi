@@ -31,10 +31,10 @@ class SimpleSpec extends WordSpec with Matchers {
     val d = DynamicBytes(Array[Byte](0x11, 0x22, 0x33, 0x44))
     val t = TupleType4[Uint256, DynamicBytes, Uint256, DynamicBytes](a, b, c, d)
     contract.trigger(t, sender, opt) onComplete {
-      case Success(txHash) => println("work succeed: " + txHash)
-      case Failure(exception) => println("work failed: " + exception)
+      case Success(txHash) =>
+        println("call trigger succeed: " + txHash)
+        system.terminate()
+      case Failure(exception) => println("call trigger failed: " + exception)
     }
-
-    Thread.sleep(10000)
   }
 }
