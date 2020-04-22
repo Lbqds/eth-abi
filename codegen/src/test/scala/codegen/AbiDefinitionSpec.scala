@@ -1,5 +1,8 @@
 package codegen
 
+import org.scalatest.{WordSpec, Matchers}
+import ethabi.util.Hex
+
 class AbiDefinitionSpec extends WordSpec with Matchers {
   "test gen const function" in {
     val json =

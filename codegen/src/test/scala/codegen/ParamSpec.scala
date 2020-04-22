@@ -1,5 +1,10 @@
 package codegen
 
+import org.scalatest.{WordSpec, Matchers}
+import io.circe.jawn.decode
+import io.circe.generic.auto._
+import io.circe.syntax._
+
 class ParamSpec extends WordSpec with Matchers {
   "test deserialize argument(without components)" in {
     val json = """{"name":"balance","type":"uint256"}"""

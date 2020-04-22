@@ -106,6 +106,7 @@ case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Se
     else genTransactionFunction(Some(defaultRetTpe))
   }
 
+  // FIXME: only support indexed event first, then non-indexed event
   private [codegen] def genEventDecodeFunc: Defn.Def = {
     assert(isEvent && !isAnonymous && name.isDefined)
     val typeInfosDecl = q"""var typeInfos = Seq.empty[TypeInfo[SolType]]"""

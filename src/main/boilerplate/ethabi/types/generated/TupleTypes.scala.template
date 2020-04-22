@@ -27,7 +27,7 @@ object TupleType0 extends SolType {
 
 [1..22#object TupleType1 {
   // create from a list
-  // def apply[[#T1 <: SolType#]](values: Seq[SolType]): TupleType1[[#T1#]] = TupleType1([#values(0).asInstanceOf[T1]#])
+  def from[[#T1 <: SolType#]](values: Seq[SolType]): TupleType1[[#T1#]] = TupleType1([#values(0).asInstanceOf[T1]#])
 
   implicit def typeInfo[[#T1 <: SolType#]](implicit [#typeInfo1: TypeInfo[T1]#]): TypeInfo[TupleType1[[#T1#]]] = {
     new TypeInfo[TupleType1[[#T1#]]] {
