@@ -21,6 +21,7 @@ case class Param(name: String, `type`: String, components: Option[Seq[Param]] = 
       canonical
     }
   }
+  private [codegen] def isTupleTpe: Boolean = components.isDefined && components.get.nonEmpty
 
   private [codegen] def isIndexed: Boolean = indexed.isDefined && indexed.get
 

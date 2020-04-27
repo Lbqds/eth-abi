@@ -1,19 +1,9 @@
 package codegen
 
-import java.io.{File, PrintWriter}
-
+import ethabi.util
 import scopt.OParser
 
 object Main extends App {
-  def writeToFile(path: String, fileName: String, code: String): Unit = {
-    val dir = new File(path)
-    dir.mkdirs
-    new PrintWriter(path + s"/$fileName") {
-      write(code)
-      close()
-    }
-  }
-
   case class Params(interactive: Boolean = false, abiFile: String = "", binFile: Option[String] = None, packages: String = "", className: String = "", output: String = "")
 
   val builder = OParser.builder[Params]
@@ -64,7 +54,7 @@ object Main extends App {
     val code = Codegen.codeGen(params.abiFile, params.binFile, params.packages.split('.').toList, params.className)
     val path = params.output + "/" + params.packages.split('.').mkString("/")
     val fileName = s"${params.className}.scala"
-    writeToFile(path, fileName, header + code.syntax)
+    util.writeToFile(path, fileName, header + code.syntax)
   }
 
   OParser.parse(cmdParser, args, Params()) match {

@@ -4,12 +4,16 @@ package ethabi
 package types
 package generated
 import util.Hex
+
 final class Bytes4(val value: Array[Byte]) extends SolType {
   assert(value.length <= 4)
   override def toString = Hex.bytes2Hex(value, withPrefix = true)
 }
+
 object Bytes4 {
   def apply(value: Array[Byte]): Bytes4 = new Bytes4(value)
+  def from(value: String): Bytes4 = new Bytes4(Hex.hex2Bytes(value))
+
   implicit lazy val typeInfo: TypeInfo[Bytes4] = new TypeInfo[Bytes4] {
     override def name: String = "bytes4"
     override def isStatic: Boolean = true

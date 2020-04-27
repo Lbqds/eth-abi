@@ -8,6 +8,7 @@ final class StringType(val value: String) extends SolType {
 
 object StringType {
   def apply(value: String): StringType = new StringType(value)
+  def from(value: String): StringType = StringType(value)
 
   implicit lazy val typeInfo: TypeInfo[StringType] = new TypeInfo[StringType] {
     override def name: String = "string"
