@@ -20,8 +20,8 @@ object TupleType0 extends SolType {
 */
 
 [1..22#final case class TupleType1[[#T1 <: SolType#]]([#_1: T1#]) extends TupleType {
-  override def toList: List[SolType] = List([#_1#])
-  override def toString = toList.mkString("[", ", ", "]")
+  override def toSeq: Seq[SolType] = Seq([#_1#])
+  override def toString = toSeq.mkString("[", ", ", "]")
 }#
 ]
 

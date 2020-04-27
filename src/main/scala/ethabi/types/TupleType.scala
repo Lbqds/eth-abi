@@ -4,11 +4,11 @@ import scala.collection.mutable
 import generated.Uint256
 
 trait TupleType extends SolType {
-  def toList: List[SolType]
+  def toSeq: Seq[SolType]
 }
 
 object TupleType {
-  def encode(typeInfos: List[TypeInfo[SolType]], encodedValues: List[Array[Byte]]): Array[Byte] = {
+  def encode(typeInfos: Seq[TypeInfo[SolType]], encodedValues: Seq[Array[Byte]]): Array[Byte] = {
     assert(typeInfos.length == encodedValues.length)
     var staticLength, dynamicLength = 0
     typeInfos.zip(encodedValues).foreach {
@@ -39,7 +39,7 @@ object TupleType {
     bytes
   }
 
-  def decode(bytes: Array[Byte], position: Int, typeInfos: List[TypeInfo[SolType]]): (List[SolType], Int) = {
+  def decode(bytes: Array[Byte], position: Int, typeInfos: Seq[TypeInfo[SolType]]): (Seq[SolType], Int) = {
     var staticOffset, totalConsumed = 0
     val results = new mutable.ListBuffer[SolType]()
     typeInfos.foreach(typeInfo => {

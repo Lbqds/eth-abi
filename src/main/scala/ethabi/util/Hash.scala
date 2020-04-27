@@ -2,7 +2,7 @@ package ethabi.util
 
 import scorex.crypto.hash.Keccak256
 
-case class Hash(bytes: Array[Byte]) {
+final case class Hash(bytes: Array[Byte]) {
   assert(bytes.length == 32)
   override def toString: String = Hex.bytes2Hex(bytes, withPrefix = true)
 }

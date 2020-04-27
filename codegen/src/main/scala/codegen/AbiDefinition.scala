@@ -6,7 +6,7 @@ import scala.meta._
 import ethabi.util.{Hash, Hex}
 
 // fallback function have no name and inputs
-case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Seq[Param]], outputs: Option[Seq[Param]],
+final case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Seq[Param]], outputs: Option[Seq[Param]],
                          stateMutability: Option[String], anonymous: Option[Boolean]) {
   import AbiDefinition._
   def isPayable: Boolean = stateMutability.isDefined && stateMutability.get == "payable"

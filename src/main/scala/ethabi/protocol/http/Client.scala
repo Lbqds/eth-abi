@@ -11,7 +11,7 @@ import io.circe.syntax._
 import ethabi.protocol.{Request, Response, Service}
 import scala.concurrent.Future
 
-class Client(url: String)(implicit system: ActorSystem, materializer: ActorMaterializer) extends Service {
+final class Client(url: String)(implicit system: ActorSystem, materializer: ActorMaterializer) extends Service {
   import system.dispatcher
 
   override def allowSubscribe: Boolean = false

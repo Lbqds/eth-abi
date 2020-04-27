@@ -5,7 +5,7 @@ import fastparse._
 import NoWhitespace._
 
 // we assume that Tuple0 does not exist
-case class Param(name: String, `type`: String, components: Option[Seq[Param]] = None, indexed: Option[Boolean] = None) {
+final case class Param(name: String, `type`: String, components: Option[Seq[Param]] = None, indexed: Option[Boolean] = None) {
   private val canonical = {
     if (`type` == "uint") "uint256"
     else if (`type` == "int") "int256"

@@ -4,7 +4,7 @@ import ethabi.util
 import scopt.OParser
 
 object Main extends App {
-  case class Params(interactive: Boolean = false, abiFile: String = "", binFile: Option[String] = None, packages: String = "", className: String = "", output: String = "")
+  final case class Params(interactive: Boolean = false, abiFile: String = "", binFile: Option[String] = None, packages: String = "", className: String = "", output: String = "")
 
   val builder = OParser.builder[Params]
   val cmdParser = {

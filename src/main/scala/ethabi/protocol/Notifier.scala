@@ -7,7 +7,7 @@ import io.circe.Decoder
 import ethabi.protocol.Subscription.{Notification, SubscriptionId, UpstreamStopped}
 import scala.collection.mutable
 
-class Notifier[T : Decoder](coordinator: ActorRef, request: Request) extends GraphStage[SourceShape[T]] {
+final class Notifier[T : Decoder](coordinator: ActorRef, request: Request) extends GraphStage[SourceShape[T]] {
   import Notifier._
   private val outlet = Outlet[T]("notifier.out")
   private val queue = mutable.Queue.empty[T]
@@ -55,7 +55,7 @@ class Notifier[T : Decoder](coordinator: ActorRef, request: Request) extends Gra
 }
 
 object Notifier {
-  case class StartSubscribe(target: ActorRef, request: Request)
-  case class SubscribeSucceed(subscriptionId: SubscriptionId)
-  case class Unsubscribe(subscriptionId: SubscriptionId)
+  final case class StartSubscribe(target: ActorRef, request: Request)
+  final case class SubscribeSucceed(subscriptionId: SubscriptionId)
+  final case class Unsubscribe(subscriptionId: SubscriptionId)
 }

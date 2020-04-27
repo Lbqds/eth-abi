@@ -20,7 +20,7 @@ object Repl {
   private val mirror = runtime.universe.runtimeMirror(getClass.getClassLoader)
   import runtime.universe.TermName
 
-  class InvalidCommandException(msg: String) extends RuntimeException(msg)
+  final class InvalidCommandException(msg: String) extends RuntimeException(msg)
 
   sealed trait Command {
     type R
@@ -28,7 +28,7 @@ object Repl {
   }
 
   // >> load `absolute path of abi file`
-  case class Load(path: String) extends Command {
+  final case class Load(path: String) extends Command {
     type R = Seq[AbiDefinition]
 
     override def execute(): Seq[AbiDefinition] = {
@@ -45,7 +45,7 @@ object Repl {
 
   // >> encode `selector` `args`
   // >> encode <ctor> `args`  =>   if is constructor
-  case class EncodeArg(selector: String, args: Seq[String], defs: Seq[AbiDefinition]) extends Command {
+  final case class EncodeArg(selector: String, args: Seq[String], defs: Seq[AbiDefinition]) extends Command {
     type R = String
 
     override def execute(): String = {
@@ -59,14 +59,14 @@ object Repl {
       if (abiDef.inputs.get.exists(_.components.isDefined)) throw new InvalidCommandException("tuple type unsupported now")
       val types = abiDef.inputs.get.map(_.tpe.toString)
       val (results, encoders) = types.zip(args).map(p => encoder(p._1, Some(p._2))).map(p => (p._2.encode(p._1.get), p._2)).unzip
-      Hex.bytes2Hex(TupleType.encode(encoders.toList, results.toList))
+      Hex.bytes2Hex(TupleType.encode(encoders, results))
     }
 
     override def toString: String = s"encode $selector ${args.mkString(" ")}\n"
   }
 
   // >> decode `selector` `encoded`
-  case class DecodeRet(selector: String, encoded: String, defs: Seq[AbiDefinition]) extends Command {
+  final case class DecodeRet(selector: String, encoded: String, defs: Seq[AbiDefinition]) extends Command {
     type R = String
 
     override def execute(): String = {
@@ -77,7 +77,7 @@ object Repl {
       val types = abiDef.outputs.get.map(_.tpe.toString)
       def helper[T]: Option[T] = None
       val (_, encoders) = types.map(t => (t, helper[String])).map((encoder _).tupled).unzip
-      val (results, _) = TupleType.decode(Hex.hex2Bytes(encoded), 0, encoders.toList)
+      val (results, _) = TupleType.decode(Hex.hex2Bytes(encoded), 0, encoders)
       encoders.zip(results).map(p => Hex.bytes2Hex(p._1.encode(p._2))).mkString("(", ", ", ")")
     }
 

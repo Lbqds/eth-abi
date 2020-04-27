@@ -12,7 +12,7 @@ import ethabi.protocol.Request._
 import ethabi.protocol.Response.Log
 import ethabi.types.generated.Bytes32
 
-class Contract(val endpoint: String) {
+final class Contract(val endpoint: String) {
   private implicit val system = ActorSystem()
   private implicit val materializer = ActorMaterializer()
   private var contractCreator: Option[Address] = None
@@ -79,7 +79,7 @@ object Contract {
   def apply(endpoint: String) = new Contract(endpoint)
 }
 
-case class EventValue(indexedValues: Seq[SolType], nonIndexedValues: Seq[SolType]) {
+final case class EventValue(indexedValues: Seq[SolType], nonIndexedValues: Seq[SolType]) {
   override def toString: String = {
     s"""
        |{
@@ -100,7 +100,7 @@ object EventValue {
         else Bytes32(bytes)
     }
     val nonIndexedTypeInfo = typeInfos.slice(topics.length, typeInfos.length).headOption
-    val nonIndexedValues = nonIndexedTypeInfo.map(_.decode(data, 0)._1.asInstanceOf[TupleType].toList)
+    val nonIndexedValues = nonIndexedTypeInfo.map(_.decode(data, 0)._1.asInstanceOf[TupleType].toSeq)
     EventValue(indexedValues, nonIndexedValues.getOrElse(Seq.empty))
   }
 }

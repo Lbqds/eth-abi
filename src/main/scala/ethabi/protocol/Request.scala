@@ -7,7 +7,7 @@ import ethabi.types.Address
 import scala.collection.mutable
 import java.util.concurrent.atomic.AtomicLong
 
-case class Request(jsonrpc: String, id: Long, params: Seq[Json], method: String) {
+final case class Request(jsonrpc: String, id: Long, params: Seq[Json], method: String) {
   def withId(id: Long): Request = copy(id = id)
 }
 
@@ -29,18 +29,18 @@ object Request {
   case object Pending extends BlockTag {
     override def toString = "pending"
   }
-  case class BlockNumber(height: Long) extends BlockTag {
+  final case class BlockNumber(height: Long) extends BlockTag {
     override def toString = Hex.long2Hex(height, withPrefix = true)
   }
 
-  case class TransactionOpt(gas: Option[BigInt], gasPrice: Option[BigInt], value: Option[BigInt], nonce: Option[Long]) {
+  final case class TransactionOpt(gas: Option[BigInt], gasPrice: Option[BigInt], value: Option[BigInt], nonce: Option[Long]) {
     def withGas(gas: BigInt): TransactionOpt = copy(gas = Some(gas))
     def withGasPrice(gasPrice: BigInt): TransactionOpt = copy(gasPrice = Some(gasPrice))
     def withValue(value: BigInt): TransactionOpt = copy(value = Some(value))
     def withNonce(nonce: Long): TransactionOpt = copy(nonce = Some(nonce))
   }
 
-  case class Transaction(from: Address, to: Option[Address], data: Array[Byte], opt: TransactionOpt) {
+  final case class Transaction(from: Address, to: Option[Address], data: Array[Byte], opt: TransactionOpt) {
     def toJson: Json = {
       val json = mutable.Map.empty[String, String]
       json("from") = from.toString
@@ -55,7 +55,7 @@ object Request {
     override def toString = toJson.spaces2
   }
 
-  case class LogFilter(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: Seq[Address], topics: Option[Array[Array[Hash]]]) {
+  final case class LogFilter(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: Seq[Address], topics: Option[Array[Array[Hash]]]) {
     def toJson: Json = {
       val json = mutable.Map.empty[String, Json]
       if (fromBlock.isDefined) json("fromBlock") = Json.fromString(fromBlock.get.toString)
@@ -67,7 +67,7 @@ object Request {
     override def toString = toJson.spaces2
   }
 
-  case class LogQuery(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: Seq[Address], topics: Option[Array[Array[Hash]]], blockHash: Option[Hash]) {
+  final case class LogQuery(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: Seq[Address], topics: Option[Array[Array[Hash]]], blockHash: Option[Hash]) {
     def toJson: Json = {
       val json = mutable.Map.empty[String, Json]
       if (fromBlock.isDefined) json("fromBlock") = Json.fromString(fromBlock.get.toString)

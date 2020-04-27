@@ -19,7 +19,7 @@ import scala.concurrent.{Future, Promise}
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-class Client(url: String)(implicit system: ActorSystem, materializer: ActorMaterializer) extends Service with Subscription {
+final class Client(url: String)(implicit system: ActorSystem, materializer: ActorMaterializer) extends Service with Subscription {
   import system.dispatcher
 
   private val listener = system.actorOf(Props(new Listener))
@@ -37,7 +37,7 @@ class Client(url: String)(implicit system: ActorSystem, materializer: ActorMater
   }
 
   // default supervisor strategy is ok
-  class Listener extends Actor {
+  final class Listener extends Actor {
     private val requests = mutable.Map.empty[Long, Promise[Response]]
     private val subscribers = mutable.Map.empty[SubscriptionId, ActorRef]
 
