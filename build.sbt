@@ -4,7 +4,7 @@ lazy val scala213 = "2.13.1"
 val commonSettings = Seq(
   organization := "com.github.lbqds",
   crossScalaVersions := Seq(scala212, scala213),
-  version := "0.1",
+  version := "0.2.0",
   scalacOptions ++= Seq(
     "-encoding", "utf8",
 //    "-Xfatal-warnings",

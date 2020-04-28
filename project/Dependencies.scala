@@ -18,9 +18,10 @@ object Dependencies {
   val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
   val circeParser = "io.circe" %% "circe-parser" % circeVersion
   val scrypto = "org.scorexfoundation" %% "scrypto" % "2.1.8"
+  val ammTerminal = "com.lihaoyi" %% "ammonite-terminal" % "2.1.0"
 
   val l = libraryDependencies
   val deps = l ++= Seq(scalaTest, actor, stream, scrypto, akkaHttp, circeCore, circeGeneric, circeParser)
-  val codegenDeps = l ++= Seq(scalaMeta, circeCore, circeGeneric, circeParser, fastParser, scopt, scalaTest)
+  val codegenDeps = l ++= Seq(scalaMeta, circeCore, circeGeneric, circeParser, fastParser, scopt, ammTerminal, scalaTest)
   val examplesDpes = l ++= Seq(actor, stream, scalaTest)
 }
