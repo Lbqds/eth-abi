@@ -46,10 +46,10 @@ a trivial example as follow:
 pragma solidity ^0.4.24;
 pragma experimental ABIEncoderV2;
 
-contract Simple {
+contract Trivial {
   event TestEvent(uint256 indexed a, bytes b, uint256 indexed c, bytes d);
   struct T { uint256 a; bytes b; uint256 c; bytes d; }
-  function Simple() public {}
+  function Trivial() public {}
   function trigger(T t) public {
     emit TestEvent(t.a, t.b, t.c, t.d);
   }
@@ -57,7 +57,7 @@ contract Simple {
 ```
 
 this contract use solidity [experimental ABIEncoderV2](https://solidity.readthedocs.io/en/latest/abi-spec.html#handling-tuple-types) feature,
-when we call `trigger` method, it just emit a log, the generated code at [here](https://github.com/Lbqds/eth-abi/blob/master/examples/src/main/scala/examples/simple/Simple.scala).
+when we call `trigger` method, it just emit a log, the generated code at [here](https://github.com/Lbqds/eth-abi/blob/master/examples/src/main/scala/examples/trivial/Trivial.scala).
 now you can interact with ethereum use the generated scala code:
 
 ```scala
@@ -67,7 +67,7 @@ import system.dispatcher
 
 // creator of contract
 val sender = Address("0xe538b17ebf20efcf1c426cf1480e8a2a4b87cb1b")
-val contract = new Simple("ws://127.0.0.1:8546")
+val contract = new Trivial("ws://127.0.0.1:8546")
 val opt = TransactionOpt(Some(BigInt(1000000)), Some(BigInt(10000)), None, None)
 
 contract.deploy(sender, opt)
@@ -79,7 +79,7 @@ while (!contract.isDeployed) {
 println("deploy succeed, address is: " + contract.contractAddress)
 
 // subscribe TestEvent
-contract.subscribeTestEvent.runForeach(event => println(event.toString))
+contract.subscribeTestEvent.runForeach(println)
 
 val a = Uint256(BigInt(1000))
 val b = DynamicBytes(Array[Byte](0x01, 0x02, 0x03, 0x04))

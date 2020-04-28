@@ -4,7 +4,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import ethabi.types.{Address, SolType, TupleType, TypeInfo}
 import ethabi.util.{Hash, Hex}
 import ethabi.protocol.ws.Client
@@ -12,9 +12,9 @@ import ethabi.protocol.Request._
 import ethabi.protocol.Response.Log
 import ethabi.types.generated.Bytes32
 
-class Contract(val endpoint: String) {
+final class Contract(val endpoint: String) {
   private implicit val system = ActorSystem()
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer = Materializer(system)
   private var contractCreator: Option[Address] = None
   private var contractAddress: Option[Address] = None
   private val client = Client(endpoint)
@@ -63,7 +63,7 @@ class Contract(val endpoint: String) {
     client.transactionReceipt(txHash) onComplete {
       case Success(response) => response match {
         case Left(responseError) => throw new RuntimeException(s"deploy contract failed: $responseError")
-        case Right(None) => system.scheduler.scheduleOnce(2 seconds, () => afterDeploy(txHash))
+        case Right(None) => system.scheduler.scheduleOnce(2 seconds)(afterDeploy(txHash))
         case Right(Some(receipt)) =>
           assert(receipt.contractAddress.isDefined)
           // call `get` explicitly
@@ -79,7 +79,7 @@ object Contract {
   def apply(endpoint: String) = new Contract(endpoint)
 }
 
-case class EventValue(indexedValues: Seq[SolType], nonIndexedValues: Seq[SolType]) {
+final case class EventValue(indexedValues: Seq[SolType], nonIndexedValues: Seq[SolType]) {
   override def toString: String = {
     s"""
        |{
@@ -100,7 +100,7 @@ object EventValue {
         else Bytes32(bytes)
     }
     val nonIndexedTypeInfo = typeInfos.slice(topics.length, typeInfos.length).headOption
-    val nonIndexedValues = nonIndexedTypeInfo.map(_.decode(data, 0)._1.asInstanceOf[TupleType].toList)
+    val nonIndexedValues = nonIndexedTypeInfo.map(_.decode(data, 0)._1.asInstanceOf[TupleType].toSeq)
     EventValue(indexedValues, nonIndexedValues.getOrElse(Seq.empty))
   }
 }

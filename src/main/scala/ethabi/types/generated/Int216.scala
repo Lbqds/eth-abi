@@ -3,12 +3,16 @@
 package ethabi
 package types
 package generated
+
 final class Int216(val value: BigInt) extends SolType {
   assert(value.bitLength <= 216)
   override def toString = value.toString
 }
+
 object Int216 {
   def apply(value: BigInt): Int216 = new Int216(value)
+  def from(value: String): Int216 = Int216(BigInt(value))
+
   implicit lazy val typeInfo: TypeInfo[Int216] = new TypeInfo[Int216] {
     override def name: String = "int216"
     override def isStatic: Boolean = true

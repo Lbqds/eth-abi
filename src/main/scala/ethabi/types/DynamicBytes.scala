@@ -9,6 +9,7 @@ final class DynamicBytes(val value: Array[Byte]) extends SolType {
 
 object DynamicBytes {
   def apply(value: Array[Byte]): DynamicBytes = new DynamicBytes(value)
+  def from(value: String): DynamicBytes = DynamicBytes(Hex.hex2Bytes(value))
 
   // encodedLength don't include prefix 32 bytes length
   private def encodedLength(length: Int): Int = {

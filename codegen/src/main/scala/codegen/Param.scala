@@ -5,7 +5,7 @@ import fastparse._
 import NoWhitespace._
 
 // we assume that Tuple0 does not exist
-case class Param(name: String, `type`: String, components: Option[Seq[Param]] = None, indexed: Option[Boolean] = None) {
+final case class Param(name: String, `type`: String, components: Option[Seq[Param]] = None, indexed: Option[Boolean] = None) {
   private val canonical = {
     if (`type` == "uint") "uint256"
     else if (`type` == "int") "int256"
@@ -21,6 +21,7 @@ case class Param(name: String, `type`: String, components: Option[Seq[Param]] = 
       canonical
     }
   }
+  private [codegen] def isTupleTpe: Boolean = components.isDefined && components.get.nonEmpty
 
   private [codegen] def isIndexed: Boolean = indexed.isDefined && indexed.get
 
@@ -82,5 +83,5 @@ case class Param(name: String, `type`: String, components: Option[Seq[Param]] = 
 object Param {
   import io.circe.jawn.decode
   import io.circe.generic.auto._
-  def apply(json: String): Param = decode[Param](json).right.get
+  def apply(json: String): Param = decode[Param](json).getOrElse(throw new RuntimeException("invalid param format"))
 }

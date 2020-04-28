@@ -13,10 +13,9 @@ final class Address(val value: Array[Byte]) extends SolType {
 object Address {
   val empty = Address(Array.fill[Byte](20)(0))
 
-  def apply(address: String): Address = {
-    Address(Hex.hex2Bytes(address))
-  }
+  def apply(address: String): Address = Address(Hex.hex2Bytes(address))
   def apply(bytes: Array[Byte]): Address = new Address(bytes)
+  def from(value: String): Address = Address(value)
 
   implicit lazy val typeInfo: TypeInfo[Address] = new TypeInfo[Address] {
     override def name: String = "address"

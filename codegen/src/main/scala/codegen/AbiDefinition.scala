@@ -6,7 +6,7 @@ import scala.meta._
 import ethabi.util.{Hash, Hex}
 
 // fallback function have no name and inputs
-case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Seq[Param]], outputs: Option[Seq[Param]],
+final case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Seq[Param]], outputs: Option[Seq[Param]],
                          stateMutability: Option[String], anonymous: Option[Boolean]) {
   import AbiDefinition._
   def isPayable: Boolean = stateMutability.isDefined && stateMutability.get == "payable"
@@ -106,6 +106,7 @@ case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Se
     else genTransactionFunction(Some(defaultRetTpe))
   }
 
+  // FIXME: only support indexed event first, then non-indexed event
   private [codegen] def genEventDecodeFunc: Defn.Def = {
     assert(isEvent && !isAnonymous && name.isDefined)
     val typeInfosDecl = q"""var typeInfos = Seq.empty[TypeInfo[SolType]]"""
@@ -146,7 +147,7 @@ object AbiDefinition {
   private val sender = Term.Param(List.empty, Term.Name("sender"), Some(Type.Name("Address")), None)
   private val log = Term.Param(List.empty, Term.Name("log"), Some(Type.Name("Log")), None)
 
-  def apply(json: String): AbiDefinition = decode[AbiDefinition](json).right.get
+  def apply(json: String): AbiDefinition = decode[AbiDefinition](json).getOrElse(throw new RuntimeException("invalid abi format"))
 
   private def paramsToTuple(params: Seq[Param]): Type = {
     if (params.length == 1) params.head.tpe
@@ -174,7 +175,7 @@ object AbiDefinition {
     Term.Apply(decodeFunc, List(input, Lit.Int(0)))
   }
 
-  private def peel[Coll <: Traversable[_]](coll: Option[Coll]): Option[Coll] = {
+  private def peel[Coll <: Iterable[_]](coll: Option[Coll]): Option[Coll] = {
     coll match {
       case Some(c) if c.isEmpty => None
       case c => c

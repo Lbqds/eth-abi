@@ -3,13 +3,13 @@ package ethabi.types
 import scala.language.implicitConversions
 
 // TODO: it would be better if `length` as type argument, maybe `shapeless` can solve this
-final class StaticArray[T <: SolType](val values: List[T]) extends SolType {
+final class StaticArray[T <: SolType](val values: Seq[T]) extends SolType {
   def apply(x: Int): T = values(x)
   override def toString = values.mkString("[", ", ", "]")
 }
 
 object StaticArray {
-  def apply[T <: SolType](values: List[T]) = new StaticArray[T](values)
+  def apply[T <: SolType](values: Seq[T]) = new StaticArray[T](values)
 
   implicit def typeInfo[T <: SolType](implicit typeInfoT: TypeInfo[T], length: Int): TypeInfo[StaticArray[T]] = new TypeInfo[StaticArray[T]] {
     override def name: String =  s"${typeInfoT.name}[$length]"

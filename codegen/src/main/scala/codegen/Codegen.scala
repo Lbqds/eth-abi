@@ -26,7 +26,7 @@ object Codegen {
 
   private def stats(abiFile: String, binFile: Option[String]) = {
     val source = Source.fromFile(abiFile).getLines().mkString
-    val abiDefs = decode[Seq[AbiDefinition]](source).right.get
+    val abiDefs = decode[Seq[AbiDefinition]](source).getOrElse(throw new RuntimeException("invalid abi format"))
     val code = binFile.map(f => Source.fromFile(f).getLines().mkString)
     genImpl ::: genBinary(code.getOrElse("")) ::: genFunctions(abiDefs) ::: genCtor(abiDefs) ::: genEvent(abiDefs) ::: genSupMethods
   }
@@ -35,7 +35,7 @@ object Codegen {
     val contents = stats(abiFile, binFile)
     val template = Template(List.empty, List.empty, Self(Term.Name("self"), None), contents)
     val primary = Ctor.Primary(List.empty, Term.Name(className), List(List(Term.Param(List.empty, Term.Name("endpoint"), Some(Type.Name("String")), None))))
-    val classDef = Defn.Class(List.empty, Type.Name(className), List.empty, primary, template)
+    val classDef = Defn.Class(List(Mod.Final()), Type.Name(className), List.empty, primary, template)
     val selector: (Term.Ref, Term.Name) => Term.Ref = (p, c) => Term.Select(p, c)
     val packagesDef = packages.map(pkg => Term.Name(pkg)).reduceLeft(selector)
 

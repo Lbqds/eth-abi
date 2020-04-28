@@ -7,8 +7,11 @@ final class Uint96(val value: BigInt) extends SolType {
   assert(value.bitLength <= 96)
   override def toString = value.toString
 }
+
 object Uint96 {
   def apply(value: BigInt): Uint96 = new Uint96(value)
+  def from(value: String): Uint96 = Uint96(BigInt(value))
+
   implicit lazy val typeInfo: TypeInfo[Uint96] = new TypeInfo[Uint96] {
     override def name: String = "uint96"
     override def isStatic: Boolean = true

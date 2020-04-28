@@ -7,8 +7,11 @@ final class Uint232(val value: BigInt) extends SolType {
   assert(value.bitLength <= 232)
   override def toString = value.toString
 }
+
 object Uint232 {
   def apply(value: BigInt): Uint232 = new Uint232(value)
+  def from(value: String): Uint232 = Uint232(BigInt(value))
+
   implicit lazy val typeInfo: TypeInfo[Uint232] = new TypeInfo[Uint232] {
     override def name: String = "uint232"
     override def isStatic: Boolean = true

@@ -14,7 +14,7 @@ class TupleTypeSpec extends WordSpec with Matchers {
   val bytes = DynamicBytes(Array.fill[Byte](20)(0x13))
 
   "test tuple3(uint256, address, bytes) encode" in {
-    val tuple = TupleType3[Uint256, Address, DynamicBytes](number, address, bytes)
+    val tuple = TupleType3.from(Seq(number, address, bytes))
     val tupleTypeInfo = implicitly[TypeInfo[TupleType3[Uint256, Address, DynamicBytes]]]
     // 0000000000000000000000000000000000000000000000000000000000002710 +
     // 0000000000000000000000002424242424242424242424242424242424242424 +

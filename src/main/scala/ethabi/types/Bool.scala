@@ -7,6 +7,12 @@ final case class Bool(value: Boolean) extends SolType {
 }
 
 object Bool {
+  def from(value: String): Bool = value match {
+    case "true" => Bool(true)
+    case "false" => Bool(false)
+    case _ => throw new RuntimeException("only construct Bool from `true` or `false`")
+  }
+
   implicit lazy val typeInfo: TypeInfo[Bool] = new TypeInfo[Bool] {
     override def name: String = "bool"
     override def isStatic: Boolean = true
