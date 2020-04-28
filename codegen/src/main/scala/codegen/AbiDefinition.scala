@@ -147,7 +147,7 @@ object AbiDefinition {
   private val sender = Term.Param(List.empty, Term.Name("sender"), Some(Type.Name("Address")), None)
   private val log = Term.Param(List.empty, Term.Name("log"), Some(Type.Name("Log")), None)
 
-  def apply(json: String): AbiDefinition = decode[AbiDefinition](json).right.get
+  def apply(json: String): AbiDefinition = decode[AbiDefinition](json).getOrElse(throw new RuntimeException("invalid abi format"))
 
   private def paramsToTuple(params: Seq[Param]): Type = {
     if (params.length == 1) params.head.tpe
@@ -175,7 +175,7 @@ object AbiDefinition {
     Term.Apply(decodeFunc, List(input, Lit.Int(0)))
   }
 
-  private def peel[Coll <: Traversable[_]](coll: Option[Coll]): Option[Coll] = {
+  private def peel[Coll <: Iterable[_]](coll: Option[Coll]): Option[Coll] = {
     coll match {
       case Some(c) if c.isEmpty => None
       case c => c

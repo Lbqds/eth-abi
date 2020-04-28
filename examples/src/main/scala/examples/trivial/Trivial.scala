@@ -26,9 +26,9 @@ final class Trivial(endpoint: String) { self =>
   }
   def decodeTestEvent(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Uint256]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Uint256]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType2[DynamicBytes, DynamicBytes]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Uint256]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Uint256]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType2[DynamicBytes, DynamicBytes]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeTestEvent: Source[EventValue, NotUsed] = {

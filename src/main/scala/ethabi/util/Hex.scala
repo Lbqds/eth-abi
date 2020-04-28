@@ -10,7 +10,7 @@ object Hex {
 
   def hex2Bytes(hex: String): Array[Byte] = {
     val slice = removePrefix(hex)
-    slice.sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte)
+    slice.toSeq.sliding(2, 2).toArray.map(v => Integer.parseInt(v.toString, 16).toByte)
   }
 
   def bytes2Hex(bytes: Array[Byte], withPrefix: Boolean = false): String = {

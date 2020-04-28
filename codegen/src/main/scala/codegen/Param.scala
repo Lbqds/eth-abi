@@ -83,5 +83,5 @@ final case class Param(name: String, `type`: String, components: Option[Seq[Para
 object Param {
   import io.circe.jawn.decode
   import io.circe.generic.auto._
-  def apply(json: String): Param = decode[Param](json).right.get
+  def apply(json: String): Param = decode[Param](json).getOrElse(throw new RuntimeException("invalid param format"))
 }

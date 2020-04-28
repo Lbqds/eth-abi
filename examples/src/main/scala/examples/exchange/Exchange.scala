@@ -270,9 +270,9 @@ final class Exchange(endpoint: String) { self =>
   }
   def decodeSignatureValidatorApproval(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType1[Bool]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType1[Bool]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeSignatureValidatorApproval: Source[EventValue, NotUsed] = {
@@ -281,10 +281,10 @@ final class Exchange(endpoint: String) { self =>
   }
   def decodeFill(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Bytes32]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType8[Address, Address, Uint256, Uint256, Uint256, Uint256, DynamicBytes, DynamicBytes]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Bytes32]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType8[Address, Address, Uint256, Uint256, Uint256, Uint256, DynamicBytes, DynamicBytes]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeFill: Source[EventValue, NotUsed] = {
@@ -293,10 +293,10 @@ final class Exchange(endpoint: String) { self =>
   }
   def decodeCancel(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Bytes32]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType3[Address, DynamicBytes, DynamicBytes]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Bytes32]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType3[Address, DynamicBytes, DynamicBytes]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeCancel: Source[EventValue, NotUsed] = {
@@ -305,9 +305,9 @@ final class Exchange(endpoint: String) { self =>
   }
   def decodeCancelUpTo(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType1[Uint256]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType1[Uint256]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeCancelUpTo: Source[EventValue, NotUsed] = {
@@ -316,7 +316,7 @@ final class Exchange(endpoint: String) { self =>
   }
   def decodeAssetProxyRegistered(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType2[Bytes4, Address]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType2[Bytes4, Address]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeAssetProxyRegistered: Source[EventValue, NotUsed] = {

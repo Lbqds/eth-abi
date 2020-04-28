@@ -110,9 +110,9 @@ final class Token(endpoint: String) { self =>
   }
   def decodeTransfer(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType1[Uint256]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType1[Uint256]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeTransfer: Source[EventValue, NotUsed] = {
@@ -121,9 +121,9 @@ final class Token(endpoint: String) { self =>
   }
   def decodeApproval(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[Address]]
-    typeInfos = typeInfos :+ implicitly[TypeInfo[TupleType1[Uint256]]]
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
+    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType1[Uint256]]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeApproval: Source[EventValue, NotUsed] = {

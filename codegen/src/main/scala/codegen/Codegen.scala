@@ -26,7 +26,7 @@ object Codegen {
 
   private def stats(abiFile: String, binFile: Option[String]) = {
     val source = Source.fromFile(abiFile).getLines().mkString
-    val abiDefs = decode[Seq[AbiDefinition]](source).right.get
+    val abiDefs = decode[Seq[AbiDefinition]](source).getOrElse(throw new RuntimeException("invalid abi format"))
     val code = binFile.map(f => Source.fromFile(f).getLines().mkString)
     genImpl ::: genBinary(code.getOrElse("")) ::: genFunctions(abiDefs) ::: genCtor(abiDefs) ::: genEvent(abiDefs) ::: genSupMethods
   }

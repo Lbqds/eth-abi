@@ -35,7 +35,7 @@ object Repl {
       val file = Source.fromFile(path)
       val content = file.getLines().mkString
       file.close()
-      val result = decode[Seq[AbiDefinition]](content).right.get
+      val result = decode[Seq[AbiDefinition]](content).getOrElse(throw new RuntimeException("invalid abi format"))
       println("load completed")
       result
     }

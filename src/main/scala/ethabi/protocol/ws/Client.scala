@@ -3,7 +3,7 @@ package ethabi.protocol.ws
 import akka.NotUsed
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props, Status}
 import akka.http.scaladsl.Http
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
@@ -19,15 +19,16 @@ import scala.concurrent.{Future, Promise}
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-final class Client(url: String)(implicit system: ActorSystem, materializer: ActorMaterializer) extends Service with Subscription {
+final class Client(url: String)(implicit system: ActorSystem, materializer: Materializer) extends Service with Subscription {
   import system.dispatcher
 
   private val listener = system.actorOf(Props(new Listener))
   // TODO: configurable
-  private val (requestReceiver, upgradeResponse) = Source.actorRef[Message](bufferSize = 1024, overflowStrategy = OverflowStrategy.dropTail)
-    .viaMat(Http().webSocketClientFlow(WebSocketRequest(url)))(Keep.both)
-    .to(Sink.actorRef(listener, UpstreamStopped))
-    .run()
+  private val (requestReceiver, upgradeResponse) =
+    Source.actorRef[Message](PartialFunction.empty, PartialFunction.empty, 1024, OverflowStrategy.dropTail)
+      .viaMat(Http().webSocketClientFlow(WebSocketRequest(url)))(Keep.both)
+      .to(Sink.actorRef(listener, UpstreamStopped, exp => throw exp))
+      .run()
 
   upgradeResponse onComplete {
     case Success(upgrade) =>
@@ -138,5 +139,5 @@ final class Client(url: String)(implicit system: ActorSystem, materializer: Acto
 object Client {
   private case class NewRequest(request: Request, promise: Promise[Response])
 
-  def apply(url: String)(implicit system: ActorSystem, materialzier: ActorMaterializer) = new Client(url)
+  def apply(url: String)(implicit system: ActorSystem, materialzier: Materializer) = new Client(url)
 }

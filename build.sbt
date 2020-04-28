@@ -1,6 +1,9 @@
+lazy val scala212 = "2.12.8"
+lazy val scala213 = "2.13.1"
+
 val commonSettings = Seq(
   organization := "com.github.lbqds",
-  scalaVersion := "2.12.8",
+  crossScalaVersions := Seq(scala212, scala213),
   version := "0.1",
   scalacOptions ++= Seq(
     "-encoding", "utf8",

@@ -4,7 +4,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import ethabi.types.{Address, SolType, TupleType, TypeInfo}
 import ethabi.util.{Hash, Hex}
 import ethabi.protocol.ws.Client
@@ -14,7 +14,7 @@ import ethabi.types.generated.Bytes32
 
 final class Contract(val endpoint: String) {
   private implicit val system = ActorSystem()
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer = Materializer(system)
   private var contractCreator: Option[Address] = None
   private var contractAddress: Option[Address] = None
   private val client = Client(endpoint)
@@ -63,7 +63,7 @@ final class Contract(val endpoint: String) {
     client.transactionReceipt(txHash) onComplete {
       case Success(response) => response match {
         case Left(responseError) => throw new RuntimeException(s"deploy contract failed: $responseError")
-        case Right(None) => system.scheduler.scheduleOnce(2 seconds, () => afterDeploy(txHash))
+        case Right(None) => system.scheduler.scheduleOnce(2 seconds)(afterDeploy(txHash))
         case Right(Some(receipt)) =>
           assert(receipt.contractAddress.isDefined)
           // call `get` explicitly
