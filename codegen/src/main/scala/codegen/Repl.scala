@@ -79,7 +79,7 @@ private[codegen] object Repl {
     override def execute(): String = {
       val abiDef =
         if (selector == ctorSelector) throw new InvalidCommandException("ctor have outputs")
-        else defs.filter(_.isFunction).find(_.name.get == selector).get
+        else defs.filter(d => d.isFunction || d.isConstant).find(_.name.get == selector).get
       if (abiDef.outputs.get.exists(_.isTupleTpe)) throw new InvalidCommandException("tuple type unsupported now")
       val types = abiDef.outputs.get.map(_.tpe.toString)
       def helper[T]: Option[T] = None
@@ -165,13 +165,13 @@ private[codegen] object Repl {
 
     def execute(raw: String): Unit = {
       try {
+        history = history :+ raw
         parseCmd(raw) match {
           case cmd: Load => ctx = cmd.execute()
           case cmd: EncodeArg => println(cmd.copy(defs = ctx).execute())
           case cmd: DecodeRet => println(cmd.copy(defs = ctx).execute())
           case cmd: Command => cmd.execute()
         }
-        history = history :+ raw
       } catch {
         case NonFatal(exp) => println(exp)
         case e: Throwable => throw e
@@ -179,11 +179,13 @@ private[codegen] object Repl {
     }
 
     // TODO: remove unnecessary filters
+    val historyFilter = new HistoryFilter(() => history.toVector, fansi.Attrs.Empty)
+    val selection = GUILikeFilters.SelectionFilter(indent = 4)
     val filters = Filter.merge(
       UndoFilter(),
       ReadlineFilters.CutPasteFilter(),
-      new HistoryFilter(() => history.toVector, fansi.Attrs.Empty),
-      GUILikeFilters.SelectionFilter(indent = 4),
+      historyFilter,
+      selection,
       BasicFilters.tabFilter(4),
       GUILikeFilters.altFilter,
       GUILikeFilters.fnFilter,
@@ -191,9 +193,31 @@ private[codegen] object Repl {
       BasicFilters.all)
     val reader = new InputStreamReader(System.in)
     val writer = new OutputStreamWriter(System.out)
+
+    val transformer = (buffer: Vector[Char], cursor: Int) => {
+      // underline all non-blank lines
+
+      def hl(b: Vector[Char]): Vector[Char] = b.flatMap{
+        case ' ' => " "
+        case '\n' => "\n"
+        case c => Console.UNDERLINED + c + Console.RESET
+      }
+      // and highlight the selection
+      val ansiBuffer = fansi.Str(hl(buffer))
+      val (newBuffer, cursorOffset) = GUILikeFilters.SelectionFilter.mangleBuffer(
+        selection, ansiBuffer, cursor, fansi.Reversed.On
+      )
+      val newNewBuffer = HistoryFilter.mangleBuffer(
+        historyFilter, newBuffer, cursor,
+        fansi.Color.Green
+      )
+
+      (newNewBuffer, cursorOffset)
+    }
+
     @tailrec
     def loop(): Unit = {
-      Terminal.readLine(">>", reader, writer, filters) match {
+      Terminal.readLine(">>", reader, writer, filters, transformer) match {
         case Some(line) => execute(line); loop()
         case _ => println("\nBye!"); saveHistory(history)
       }
