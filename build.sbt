@@ -1,10 +1,13 @@
+import sbtassembly.AssemblyPlugin.defaultShellScript
+
 lazy val scala212 = "2.12.8"
 lazy val scala213 = "2.13.1"
+lazy val ver = "0.2.0"
 
 val commonSettings = Seq(
   organization := "com.github.lbqds",
   crossScalaVersions := Seq(scala212, scala213),
-  version := "0.2.0",
+  version := ver,
   scalacOptions ++= Seq(
     "-encoding", "utf8",
 //    "-Xfatal-warnings",
@@ -56,7 +59,8 @@ lazy val codegen =
     .settings(Dependencies.codegenDeps)
     .settings(
       name := "codegen",
-      assemblyJarName := "abi-codegen.jar",
+      assemblyOption in assembly := (assemblyOption in assembly).value.copy(prependShellScript = Some(defaultShellScript)),
+      assemblyJarName := s"abi-codegen-$ver",
       skip in publish := true
     )
 

@@ -1,9 +1,9 @@
 package codegen
 
-import scala.io.StdIn
 import scala.io.Source
 import scala.reflect.runtime
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
 import io.circe.jawn.decode
 import io.circe.generic.auto._
@@ -11,15 +11,19 @@ import fastparse._
 import NoWhitespace._
 import ethabi.types._
 import ethabi.util.Hex
+import ethabi.util
 import ammonite.terminal._
 import ammonite.terminal.filters._
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.nio.file.Files
+import java.nio.file.Paths
 
 // TODO: support decode event, encode struct directly
-object Repl {
+private[codegen] object Repl {
 
   private val ctorSelector = "<ctor>"
+  private val historyPath = System.getProperty("user.home") + "/.ethabi_history"
   private val mirror = runtime.universe.runtimeMirror(getClass.getClassLoader)
   import runtime.universe.TermName
 
@@ -87,13 +91,6 @@ object Repl {
     override def toString: String = s"decode $selector $encoded\n"
   }
 
-  // >> quit
-  case object Quit extends Command {
-    type R = Unit
-    override def execute(): Unit = System.exit(0)
-    override def toString: String = "quit\n"
-  }
-
   // ignore whitespaces
   case object Empty extends Command {
     type R = Unit
@@ -110,12 +107,12 @@ object Repl {
   private def selectorP[_ : P] = P(ctorP | funcNameP)
   private def stringP[_ : P] = P(anyCharExceptSpacesP.rep)
   private def argsP[_ : P] = P(spaceP(1) ~ stringP.!).rep
-  implicit class WithSpace[T](p: => P[T]) {
+  private implicit class WithSpace[T](p: => P[T]) {
     def withSpace0[_: P]: P[T] = P(spaceP(0) ~ p ~ spaceP(0))
     def withSpace1[_: P]: P[T] = P(spaceP(1) ~ p ~ spaceP(1))
   }
 
-  def parseCmd(line: String): Command = {
+  private def parseCmd(line: String): Command = {
     def loadCmdP[_ : P] = P("load" ~/ spaceP(1) ~ absolutePathP.!).withSpace0.map(Load.apply)
     def encodeArgCmdP[_ : P] = P("encode" ~/ spaceP(0) ~ selectorP.! ~ argsP).withSpace0.map {
       case (selector, args) => EncodeArg(selector, args, Seq.empty[AbiDefinition])
@@ -123,9 +120,8 @@ object Repl {
     def decodeRetCmdP[_ : P] = P("decode" ~/ funcNameP.!.withSpace1 ~ stringP.!).withSpace0.map {
       case (selector, encoded) => DecodeRet(selector, encoded, Seq.empty[AbiDefinition])
     }
-    def quitCmdP[_ : P] = P("quit" ~/ spaceP(0)).!.withSpace0.map(_ => Quit)
     def emptyP[_ : P] = P(CharsWhileIn(" \t\r\n\f") ~/ spaceP(0)).map(_ => Empty)
-    def cmdP[_ : P] = P(loadCmdP | encodeArgCmdP | decodeRetCmdP | quitCmdP | emptyP)
+    def cmdP[_ : P] = P(loadCmdP | encodeArgCmdP | decodeRetCmdP |  emptyP)
 
     if (line == "") Empty
     else parse(line, cmdP(_)) match {
@@ -134,7 +130,7 @@ object Repl {
     }
   }
 
-  def encoder(tpe: String, arg: Option[String]): (Option[SolType], TypeInfo[SolType]) = {
+  private def encoder(tpe: String, arg: Option[String]): (Option[SolType], TypeInfo[SolType]) = {
     val isGenerated = tpe.startsWith("Int") || tpe.startsWith("Uint") || tpe.startsWith("Bytes")
     val modulePath = if (isGenerated) s"ethabi.types.generated.$tpe" else s"ethabi.types.$tpe"
     val module = mirror.staticModule(modulePath)
@@ -147,107 +143,61 @@ object Repl {
     (result, typeInfo)
   }
 
-  /*
-  def start(): Unit = {
-    var ctx = Seq.empty[AbiDefinition]
+  private def readHistory(): Seq[String] = {
+    if (Files.exists(Paths.get(historyPath))) {
+      val source = Source.fromFile(historyPath)
+      val history = source.getLines.toList
+      source.close()
+      history
+    } else {
+      Files.createFile(Paths.get(historyPath))
+      Seq()
+    }
+  }
 
-    @tailrec
-    def loop(): Unit = {
-      print(">>")
+  private def saveHistory(history: Seq[String]): Unit = {
+    util.writeToFile(historyPath, history.mkString("", "\n", ""))
+  }
+
+  private[codegen] def start(): Unit = {
+    var history: immutable.Seq[String] = immutable.Seq(readHistory(): _*)
+    var ctx: Seq[AbiDefinition] = Seq.empty[AbiDefinition]
+
+    def execute(raw: String): Unit = {
       try {
-        val line = StdIn.readLine()
-        if (line == null) Quit.execute()
-        parseCmd(line) match {
+        parseCmd(raw) match {
           case cmd: Load => ctx = cmd.execute()
           case cmd: EncodeArg => println(cmd.copy(defs = ctx).execute())
           case cmd: DecodeRet => println(cmd.copy(defs = ctx).execute())
-          case cmd => cmd.execute()
+          case cmd: Command => cmd.execute()
         }
+        history = history :+ raw
       } catch {
         case NonFatal(exp) => println(exp)
         case e: Throwable => throw e
       }
-      loop()
     }
-    loop()
-  }
-   */
-  def start(): Unit = {
+
+    // TODO: remove unnecessary filters
+    val filters = Filter.merge(
+      UndoFilter(),
+      ReadlineFilters.CutPasteFilter(),
+      new HistoryFilter(() => history.toVector, fansi.Attrs.Empty),
+      GUILikeFilters.SelectionFilter(indent = 4),
+      BasicFilters.tabFilter(4),
+      GUILikeFilters.altFilter,
+      GUILikeFilters.fnFilter,
+      ReadlineFilters.navFilter,
+      BasicFilters.all)
+    val reader = new InputStreamReader(System.in)
+    val writer = new OutputStreamWriter(System.out)
     @tailrec
     def loop(): Unit = {
-      Terminal.readLine(
-        ">>",
-        new InputStreamReader(System.in),
-        new OutputStreamWriter(System.out),
-        Filter.merge(BasicFilters.all)
-      ) match {
-        case Some(line) => println(line)
-        case _ => println("none")
+      Terminal.readLine(">>", reader, writer, filters) match {
+        case Some(line) => execute(line); loop()
+        case _ => println("\nBye!"); saveHistory(history)
       }
-      loop()
     }
     loop()
   }
-
-
-  /*
-  System.setProperty("ammonite-sbt-build", "true")
-    var history = List.empty[String]
-    val selection = GUILikeFilters.SelectionFilter(indent = 4)
-    def multilineFilter: Filter = Filter.partial{
-      case TermState(13 ~: rest, b, c, _) if b.count(_ == '(') != b.count(_ == ')') =>
-        BasicFilters.injectNewLine(b, c, rest)
-    }
-    val reader = new java.io.InputStreamReader(System.in)
-    val cutPaste = ReadlineFilters.CutPasteFilter()
-    rec()
-    @tailrec def rec(): Unit = {
-      val historyFilter = new HistoryFilter(() => history.toVector, fansi.Color.Blue)
-      Terminal.readLine(
-        Console.MAGENTA + (0 until 10).mkString + "\n@@@ " + Console.RESET,
-        reader,
-        new OutputStreamWriter(System.out),
-        Filter.merge(
-          UndoFilter(),
-          cutPaste,
-          historyFilter,
-          multilineFilter,
-          selection,
-          BasicFilters.tabFilter(4),
-          GUILikeFilters.altFilter,
-          GUILikeFilters.fnFilter,
-          ReadlineFilters.navFilter,
-  //        Example multiline support by intercepting Enter key
-          BasicFilters.all
-        ),
-        // Example displayTransform: underline all non-spaces
-        displayTransform = (buffer, cursor) => {
-          // underline all non-blank lines
-
-          def hl(b: Vector[Char]): Vector[Char] = b.flatMap{
-            case ' ' => " "
-            case '\n' => "\n"
-            case c => Console.UNDERLINED + c + Console.RESET
-          }
-          // and highlight the selection
-          val ansiBuffer = fansi.Str(hl(buffer))
-          val (newBuffer, cursorOffset) = SelectionFilter.mangleBuffer(
-            selection, ansiBuffer, cursor, fansi.Reversed.On
-          )
-          val newNewBuffer = HistoryFilter.mangleBuffer(
-            historyFilter, newBuffer, cursor,
-            fansi.Color.Green
-          )
-
-          (newNewBuffer, cursorOffset)
-        }
-      ) match {
-        case None => println("Bye!")
-        case Some(s) =>
-          history = s :: history
-          println(s)
-          rec()
-      }
-    }
-   */
 }

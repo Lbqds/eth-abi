@@ -11,7 +11,7 @@ object Main extends App {
     import builder._
     OParser.sequence(
       programName("abi-codegen"),
-      head("abi-codegen", "0.1"),
+      head("abi-codegen", "0.2.0"),
       opt[Unit]('i', "interactive")
         .optional()
         .action((_, params) => params.copy(interactive = true))
