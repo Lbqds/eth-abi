@@ -150,12 +150,9 @@ object AbiDefinition {
   def apply(json: String): AbiDefinition = decode[AbiDefinition](json).getOrElse(throw new RuntimeException("invalid abi format"))
 
   private def paramsToTuple(params: Seq[Param]): Type = {
-    if (params.length == 1) params.head.tpe
-    else {
-      val paramTypes = params.map(_.tpe)
-      val tupleType = Type.Name(s"TupleType${paramTypes.length}")
-      Type.Apply(tupleType, paramTypes.toList)
-    }
+    val paramTypes = params.map(_.tpe)
+    val tupleType = Type.Name(s"TupleType${paramTypes.length}")
+    Type.Apply(tupleType, paramTypes.toList)
   }
 
   private def encodeParams(paramsTpe: List[Type], params: List[Term.Param], inputs: List[Term.Name]): Term.Apply = {

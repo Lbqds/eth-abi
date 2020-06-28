@@ -8,7 +8,8 @@ import scala.meta._
 object Codegen {
   private def genImpl: List[Stat] = List(
     q"private val impl = Contract(endpoint)",
-    q"import impl.dispatcher"
+    q"import impl.dispatcher",
+    q"def service = impl.service"
   )
   private def genBinary(code: String): List[Stat] = List(q"""private val binary = ${Lit.String(code)}""")
   private def genFunctions(abiDefinitions: Seq[AbiDefinition]): List[Stat] =

@@ -2,11 +2,11 @@ package ethabi.protocol.ws
 
 import akka.NotUsed
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props, Status}
-import akka.http.scaladsl.Http
-import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
+import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
+import akka.http.scaladsl.Http
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.{Decoder, jawn}
@@ -44,6 +44,15 @@ final class Client(url: String)(implicit system: ActorSystem, materializer: Mate
 
     override def receive: Receive = {
       case message: TextMessage.Strict => onMessage(message)
+      case message: TextMessage.Streamed =>
+        message
+          .textStream
+          .runFold(new mutable.StringBuilder())((b, e) => b.append(e))
+          .map(b => TextMessage.Strict.apply(b.toString))
+          .onComplete {
+            case Success(value) => onMessage(value)
+            case Failure(exp) => throw exp
+          }
       case UpstreamStopped =>
         subscribers.values.foreach(_ ! UpstreamStopped)
         self ! PoisonPill
@@ -53,7 +62,7 @@ final class Client(url: String)(implicit system: ActorSystem, materializer: Mate
       case StartSubscribe(target, request) => onSubscribe(target, request)
       case NewRequest(request, promise) => onNewRequest(request, promise)
       case Unsubscribe(id) => onUnsubscribe(id)
-      case _ => // log
+      case msg => throw new RuntimeException(s"unknown message $msg")
     }
 
     private def onNewRequest(request: Request, promise: Promise[Response]): Unit = {

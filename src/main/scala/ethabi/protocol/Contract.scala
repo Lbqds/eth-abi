@@ -24,6 +24,7 @@ final class Contract(val endpoint: String) {
   def creator: Option[Address] = contractCreator
   def load(address: Address): Unit = contractAddress = Some(address)
   def isDeployed: Boolean = contractAddress.isDefined
+  def service: Service = client
 
   def sendTransaction(data: Array[Byte], sender: Address, opt: TransactionOpt): Future[Hash] = {
     if (contractAddress.isEmpty) throw new RuntimeException("contract address is empty when call contract method")
