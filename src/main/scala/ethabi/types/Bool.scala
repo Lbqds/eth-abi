@@ -18,8 +18,8 @@ object Bool {
     override def isStatic: Boolean = true
     override def encode[U >: Bool](value: U): Array[Byte] = {
       val b = value.asInstanceOf[Bool].value
-      if (b) Uint8.typeInfo.encode(Uint8(BigInt(1)))
-      else Uint8.typeInfo.encode(Uint8(BigInt(0)))
+      if (b) TypeInfo[Uint8].encode(Uint8(BigInt(1)))
+      else TypeInfo[Uint8].encode(Uint8(BigInt(0)))
     }
     override def decode(bytes: Array[Byte], position: Int): (Bool, Int) = {
       val (result, consumed) = Uint8.typeInfo.decode(bytes, position)

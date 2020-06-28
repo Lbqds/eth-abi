@@ -14,11 +14,11 @@ object FunctionType {
     val bytes = Array.fill[Byte](24)(0)
     Array.copy(function.selector, 0, bytes, 0, 4)
     Array.copy(function.address.value, 0, bytes, 4, 20)
-    Bytes24.typeInfo.encode(Bytes24(bytes))
+    TypeInfo[Bytes24].encode(Bytes24(bytes))
   }
 
   def decode(bytes: Array[Byte], position: Int): (FunctionType, Int) = {
-    val (result, consumed) = Bytes24.typeInfo.decode(bytes, position)
+    val (result, consumed) = TypeInfo[Bytes24].decode(bytes, position)
     (FunctionType(result.value.slice(0, 4), Address(result.value.slice(4, 24))), consumed)
   }
 

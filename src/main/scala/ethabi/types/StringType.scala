@@ -15,10 +15,10 @@ object StringType {
     override def isStatic: Boolean = false
     override def encode[U >: StringType](value: U): Array[Byte] = {
       val bytes = value.asInstanceOf[StringType].value.getBytes(StandardCharsets.UTF_8)
-      DynamicBytes.typeInfo.encode(DynamicBytes(bytes))
+      TypeInfo[DynamicBytes].encode(DynamicBytes(bytes))
     }
     override def decode(bytes: Array[Byte], position: Int): (StringType, Int) = {
-      val (result, consumed) = DynamicBytes.typeInfo.decode(bytes, position)
+      val (result, consumed) = TypeInfo[DynamicBytes].decode(bytes, position)
       (StringType(new String(result.value, StandardCharsets.UTF_8)), consumed)
     }
   }

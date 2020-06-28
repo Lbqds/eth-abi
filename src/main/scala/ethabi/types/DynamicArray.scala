@@ -16,14 +16,14 @@ object DynamicArray {
     override def isStatic: Boolean = false
     override def encode[U >: DynamicArray[T]](value: U): Array[Byte] = {
       val values = value.asInstanceOf[DynamicArray[T]].values
-      val encodedLength = Uint256.typeInfo.encode(Uint256(BigInt(values.length)))
+      val encodedLength = TypeInfo[Uint256].encode(Uint256(BigInt(values.length)))
       val encodedValues = values.map(typeInfoT.encode(_))
       val typeInfos = Seq.fill[TypeInfo[T]](values.length)(typeInfoT)
       val bytes = TupleType.encode(typeInfos, encodedValues)
       encodedLength ++ bytes
     }
     override def decode(bytes: Array[Byte], position: Int): (DynamicArray[T], Int) = {
-      val (length, lengthConsumed) = Uint256.typeInfo.decode(bytes, position)
+      val (length, lengthConsumed) = TypeInfo[Uint256].decode(bytes, position)
       val typeInfos = Seq.fill[TypeInfo[T]](length.value.toInt)(typeInfoT)
       val (result, consumed) = TupleType.decode(bytes, position + lengthConsumed, typeInfos)
       val values = result.map(_.asInstanceOf[T])

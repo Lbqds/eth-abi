@@ -18,12 +18,12 @@ final class Token(endpoint: String) { self =>
   def name(sender: Address, opt: TransactionOpt): Future[TupleType1[StringType]] = {
     val encoded = Hex.hex2Bytes("06fdde03")
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[StringType]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[StringType]].decode(bytes, 0)
       result._1
     }
   }
   def approve(spender: Address, value: Uint256, sender: Address, opt: TransactionOpt): Future[Hash] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType2[Address, Uint256]]].encode(TupleType2.apply[Address, Uint256](spender, value))
+    val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](spender, value))
     val functionId = Hex.hex2Bytes("095ea7b3")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(encoded, sender, opt)
@@ -31,12 +31,12 @@ final class Token(endpoint: String) { self =>
   def totalSupply(sender: Address, opt: TransactionOpt): Future[TupleType1[Uint256]] = {
     val encoded = Hex.hex2Bytes("18160ddd")
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[Uint256]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
       result._1
     }
   }
   def transferFrom(from: Address, to: Address, value: Uint256, sender: Address, opt: TransactionOpt): Future[Hash] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType3[Address, Address, Uint256]]].encode(TupleType3.apply[Address, Address, Uint256](from, to, value))
+    val paramsEncoded = TypeInfo[TupleType3[Address, Address, Uint256]].encode(TupleType3.apply[Address, Address, Uint256](from, to, value))
     val functionId = Hex.hex2Bytes("23b872dd")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(encoded, sender, opt)
@@ -44,64 +44,64 @@ final class Token(endpoint: String) { self =>
   def DECIMALS(sender: Address, opt: TransactionOpt): Future[TupleType1[Uint8]] = {
     val encoded = Hex.hex2Bytes("2e0f2625")
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[Uint8]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[Uint8]].decode(bytes, 0)
       result._1
     }
   }
   def INITIAL_SUPPLY(sender: Address, opt: TransactionOpt): Future[TupleType1[Uint256]] = {
     val encoded = Hex.hex2Bytes("2ff2e9dc")
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[Uint256]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
       result._1
     }
   }
   def decimals(sender: Address, opt: TransactionOpt): Future[TupleType1[Uint8]] = {
     val encoded = Hex.hex2Bytes("313ce567")
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[Uint8]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[Uint8]].decode(bytes, 0)
       result._1
     }
   }
   def increaseAllowance(spender: Address, addedValue: Uint256, sender: Address, opt: TransactionOpt): Future[Hash] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType2[Address, Uint256]]].encode(TupleType2.apply[Address, Uint256](spender, addedValue))
+    val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](spender, addedValue))
     val functionId = Hex.hex2Bytes("39509351")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(encoded, sender, opt)
   }
   def balanceOf(owner: Address, sender: Address, opt: TransactionOpt): Future[TupleType1[Uint256]] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType1[Address]]].encode(TupleType1.apply[Address](owner))
+    val paramsEncoded = TypeInfo[TupleType1[Address]].encode(TupleType1.apply[Address](owner))
     val functionId = Hex.hex2Bytes("70a08231")
     val encoded = functionId ++ paramsEncoded
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[Uint256]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
       result._1
     }
   }
   def symbol(sender: Address, opt: TransactionOpt): Future[TupleType1[StringType]] = {
     val encoded = Hex.hex2Bytes("95d89b41")
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[StringType]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[StringType]].decode(bytes, 0)
       result._1
     }
   }
   def decreaseAllowance(spender: Address, subtractedValue: Uint256, sender: Address, opt: TransactionOpt): Future[Hash] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType2[Address, Uint256]]].encode(TupleType2.apply[Address, Uint256](spender, subtractedValue))
+    val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](spender, subtractedValue))
     val functionId = Hex.hex2Bytes("a457c2d7")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(encoded, sender, opt)
   }
   def transfer(to: Address, value: Uint256, sender: Address, opt: TransactionOpt): Future[Hash] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType2[Address, Uint256]]].encode(TupleType2.apply[Address, Uint256](to, value))
+    val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](to, value))
     val functionId = Hex.hex2Bytes("a9059cbb")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(encoded, sender, opt)
   }
   def allowance(owner: Address, spender: Address, sender: Address, opt: TransactionOpt): Future[TupleType1[Uint256]] = {
-    val paramsEncoded = implicitly[TypeInfo[TupleType2[Address, Address]]].encode(TupleType2.apply[Address, Address](owner, spender))
+    val paramsEncoded = TypeInfo[TupleType2[Address, Address]].encode(TupleType2.apply[Address, Address](owner, spender))
     val functionId = Hex.hex2Bytes("dd62ed3e")
     val encoded = functionId ++ paramsEncoded
     impl.call(encoded, sender, opt).map { bytes => 
-      val result = implicitly[TypeInfo[TupleType1[Uint256]]].decode(bytes, 0)
+      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
       result._1
     }
   }
@@ -111,9 +111,9 @@ final class Token(endpoint: String) { self =>
   }
   def decodeTransfer(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
-    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
-    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType1[Uint256]]])
+    typeInfos = typeInfos :+ (TypeInfo[Address])
+    typeInfos = typeInfos :+ (TypeInfo[Address])
+    typeInfos = typeInfos :+ (TypeInfo[TupleType1[Uint256]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeTransfer: Source[EventValue, NotUsed] = {
@@ -122,9 +122,9 @@ final class Token(endpoint: String) { self =>
   }
   def decodeApproval(log: Log): EventValue = {
     var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
-    typeInfos = typeInfos :+ (implicitly[TypeInfo[Address]])
-    typeInfos = typeInfos :+ (implicitly[TypeInfo[TupleType1[Uint256]]])
+    typeInfos = typeInfos :+ (TypeInfo[Address])
+    typeInfos = typeInfos :+ (TypeInfo[Address])
+    typeInfos = typeInfos :+ (TypeInfo[TupleType1[Uint256]])
     EventValue.decodeEvent(typeInfos, log)
   }
   def subscribeApproval: Source[EventValue, NotUsed] = {

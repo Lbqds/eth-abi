@@ -21,10 +21,10 @@ object Address {
     override def name: String = "address"
     override def isStatic: Boolean = true
     override def encode[U >: Address](address: U): Array[Byte] = {
-      Uint160.typeInfo.encode(Uint160(BigInt(new BigInteger(address.asInstanceOf[Address].value))))
+      TypeInfo[Uint160].encode(Uint160(BigInt(new BigInteger(address.asInstanceOf[Address].value))))
     }
     override def decode(bytes: Array[Byte], position: Int): (Address, Int) = {
-      val (result, consumed) = Uint160.typeInfo.decode(bytes, position)
+      val (result, consumed) = TypeInfo[Uint160].decode(bytes, position)
       (Address(result.value.toByteArray), consumed)
     }
   }

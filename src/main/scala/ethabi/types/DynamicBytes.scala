@@ -22,7 +22,7 @@ object DynamicBytes {
 
   def encode(value: Array[Byte]): Array[Byte] = {
     val length = Uint256(BigInt(value.length))
-    val lengthEncoded = Uint256.typeInfo.encode(length)
+    val lengthEncoded = TypeInfo[Uint256].encode(length)
     val totalLength = encodedLength(value.length) + 32
     val result = Array.fill[Byte](totalLength)(0)
     Array.copy(lengthEncoded, 0, result, 0, 32)
@@ -31,7 +31,7 @@ object DynamicBytes {
   }
 
   def decode(bytes: Array[Byte], position: Int): (Array[Byte], Int) = {
-    val (result, consumed) = Uint256.typeInfo.decode(bytes, position)
+    val (result, consumed) = TypeInfo[Uint256].decode(bytes, position)
     val offset = position + consumed
     val length = result.value.toInt
     val encodedLen = encodedLength(length)

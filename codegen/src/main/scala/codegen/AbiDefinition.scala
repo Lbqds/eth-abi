@@ -110,12 +110,12 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
   private [codegen] def genEventDecodeFunc: Defn.Def = {
     assert(isEvent && !isAnonymous && name.isDefined)
     val typeInfosDecl = q"""var typeInfos = Seq.empty[TypeInfo[SolType]]"""
-    val indexedTypeInfos = inputs.map(_.filter(_.isIndexed).map(p => q"""typeInfos = typeInfos :+ implicitly[TypeInfo[${p.tpe}]]"""))
+    val indexedTypeInfos = inputs.map(_.filter(_.isIndexed).map(p => q"""typeInfos = typeInfos :+ TypeInfo[${p.tpe}]"""))
     val nonIndexTypeInfo = inputs.flatMap { params =>
       val tpes = params.filter(!_.isIndexed).map(_.tpe).toList
       if (tpes.nonEmpty) {
         val tupleType = Type.Name(s"TupleType${tpes.length}")
-        Some(q"""typeInfos = typeInfos :+ implicitly[TypeInfo[${Type.Apply(tupleType, tpes)}]]""")
+        Some(q"""typeInfos = typeInfos :+ TypeInfo[${Type.Apply(tupleType, tpes)}]""")
       } else None
     }
     var stats: List[Stat] = List(typeInfosDecl)
@@ -161,14 +161,12 @@ object AbiDefinition {
     val termName = Term.Name(name)
     val applyFunc = Term.Select(termName, Term.Name("apply"))
     val bundle = Term.Apply(Term.ApplyType(applyFunc, params.map(_.decltpe.get)), inputs)
-    val typeInfo = q"implicitly[TypeInfo[${Type.Apply(typeName, paramsTpe)}]]"
-    val encodeFunc = Term.Select(typeInfo, Term.Name("encode"))
+    val encodeFunc = Term.Select(q"TypeInfo[${Type.Apply(typeName, paramsTpe)}]", Term.Name("encode"))
     Term.Apply(encodeFunc, List(bundle))
   }
 
   private def decodeParams(paramsTpe: Type, input: Term.Name): Term.Apply = {
-    val typeInfo = q"implicitly[TypeInfo[$paramsTpe]]"
-    val decodeFunc = Term.Select(typeInfo, Term.Name("decode"))
+    val decodeFunc = Term.Select(q"TypeInfo[$paramsTpe]", Term.Name("decode"))
     Term.Apply(decodeFunc, List(input, Lit.Int(0)))
   }
 
