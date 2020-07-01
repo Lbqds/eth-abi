@@ -43,7 +43,7 @@ trait Subscriber[F[_]] { self: Client[F] =>
    * @param id subscription id
    * @return true if cancel succeed, false otherwise; client won't receive notification no matter if succeed
    */
-  def unsubscribe(id: SubscriptionId): F[Deferred[F, Option[Boolean]]]
+  def unsubscribe(id: SubscriptionId): F[Deferred[F, Boolean]]
 }
 
 

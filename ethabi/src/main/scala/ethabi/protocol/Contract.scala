@@ -5,7 +5,6 @@ import cats.Applicative
 import cats.implicits._
 import cats.effect.concurrent._
 import cats.effect._
-import cats.effect.implicits._
 import ethabi.types._
 import ethabi.util._
 import ws.WebsocketClient
@@ -37,16 +36,16 @@ trait Contract[F[_]] {
    * @param args deploy transaction data
    * @return     deploy transaction hash, which can used to get receipt if deploy failed
    */
-  def deploy(args: CallArgs): F[Deferred[F, Option[Hash]]]
+  def deploy(args: CallArgs): F[Deferred[F, Hash]]
 
   // load contract with address, `address` will be set with `contractAddress`
   def load(contractAddress: Address): F[Unit]
 
   // call contract method by eth_sendTransaction
-  def sendTransaction(args: CallArgs): F[Deferred[F, Option[Hash]]]
+  def sendTransaction(args: CallArgs): F[Deferred[F, Hash]]
 
   // call contract method by eth_call
-  def call(args: CallArgs): F[Deferred[F, Option[Array[Byte]]]]
+  def call(args: CallArgs): F[Deferred[F, Array[Byte]]]
 
   // subscribe contract event logs
   def subscribeLogs(topic: Hash): F[SubscriptionResult[F, Log]]
@@ -73,11 +72,10 @@ object Contract {
 
       override def load(contractAddress: Address): F[Unit] = contractAddressR.set(Some(contractAddress))
 
-      override def deploy(args: CallArgs): F[Deferred[F, Option[Hash]]] = for {
+      override def deploy(args: CallArgs): F[Deferred[F, Hash]] = for {
         _       <- contractorCreatorR.set(Some(args.sender))
         txHashP <- cli.sendTransaction(Request.Transaction.deployTransaction(args))
-        fiber   <- txHashP.get.start
-        txHash  <- fiber.join.flatMap(v => assertNotNone[F, Hash]("txHash", v))
+        txHash  <- txHashP.get
         retryPolicies = RetryPolicies.limitRetries[F](5).join(RetryPolicies.constantDelay[F](5 seconds))
         receipt <- retryUntil[F, Option[TransactionReceipt]](
           "wait deploy contract",
@@ -85,18 +83,18 @@ object Contract {
           cli.getTransactionReceipt(txHash).flatMap(_.get),
           _.isDefined
         )
-        address <- assertNotNone[F, Address]("contract address", receipt.get.contractAddress.map(Address.from))
+        address <- assertNotNone[F, Address]("contract address", receipt.get.contractAddress)
         _       <- contractAddressR.set(Some(address))
       } yield txHashP
 
-      override def sendTransaction(args: CallArgs): F[Deferred[F, Option[Hash]]] = for {
+      override def sendTransaction(args: CallArgs): F[Deferred[F, Hash]] = for {
         address <- contractAddressR.get
         _       <- assertNotNone[F, Address]("call contract by send transaction", address)
         transaction = Request.Transaction(from = args.sender, data = args.data, to = address, opt = args.opt)
         promise <- cli.sendTransaction(transaction)
       } yield promise
 
-      override def call(args: CallArgs): F[Deferred[F, Option[Array[Byte]]]] = for {
+      override def call(args: CallArgs): F[Deferred[F, Array[Byte]]] = for {
         address <- contractAddressR.get
         _       <- assertNotNone[F, Address]("call contract by eth call", address)
         callData = Request.Transaction(from = args.sender, data = args.data, to = address, opt = args.opt)

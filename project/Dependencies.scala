@@ -24,7 +24,8 @@ object Dependencies {
   val catsRetry = "com.github.cb372" %% "cats-retry" % "1.1.1"
 
   val l = libraryDependencies
-  val deps = l ++= Seq(catsCore, catsEffect, httpClient, http4sCirce, catsRetry, scalaTest, scrypto, circeCore, circeGeneric, circeParser)
+  val deps = l ++= Seq(catsCore, catsEffect, httpClient, http4sCirce,
+    catsRetry, scalaTest, scrypto, circeCore, circeGeneric, circeParser)
   val codegenDeps = l ++= Seq(scalaMeta, circeCore, circeGeneric, circeParser, fastParser, scopt,
     fansi, ammTerminal, scalaTest)
 }

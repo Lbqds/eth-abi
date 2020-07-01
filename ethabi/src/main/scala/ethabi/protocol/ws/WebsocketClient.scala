@@ -9,13 +9,11 @@ import cats.effect.implicits._
 import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.Topic
-import io.circe.generic.auto._
 import io.circe.Decoder
 import io.circe.jawn
 import org.http4s.Uri
 import org.http4s.client.jdkhttpclient._
 
-// TODO: reconnect when failed, refer to http4s `ConnectionManager`
 abstract class WebsocketClient[F[_]] extends Client[F] with Subscriber[F] {
   private[ws] def terminate: F[Unit]
 }
@@ -55,7 +53,7 @@ object WebsocketClient {
           def onNotify(notification: Subscription.Notification): F[Unit] = {
             for {
               map <- subscriptionMap.get
-              _ <- map.get(notification.subscriptionId).fold(Sync[F].unit)(_.publish1(notification))
+              _   <- map.get(notification.subscriptionId).fold(Sync[F].unit)(_.publish1(notification))
             } yield ()
           }
 
@@ -63,7 +61,7 @@ object WebsocketClient {
             val decoder = Decoder[Response].either(Decoder[Subscription.Notification])
             decoder.decodeJson(json)
               .fold(Stream.raiseError[F], _.fold(
-                resp => Stream.eval_(onResponse(resp.id, resp)),
+                resp => Stream.eval_(onResponse(resp.id.value, resp)),
                 notification => Stream.eval_(onNotify(notification))
               ))
           })
@@ -71,35 +69,35 @@ object WebsocketClient {
         case Some(frame) => Stream.raiseError[F](new RuntimeException(s"unexpected frame $frame"))
 
         case None => Stream.empty
+
+      }.handleErrorWith { err =>
+        Stream.eval_(Sync[F].delay(err.printStackTrace())) ++   // ignore current error and continue, NOTE: it is necessary to handle
+        dispatch(connection, requestMap, subscriptionMap)       // error in `Stream` level, stream will stop if handle error in `F` level
       }
     }
 
-    val newClient: WSConnectionHighLevel[F] => F[WebsocketClient[F]] = conn => for {
-      requestMap <- Ref[F].of(Map.empty[Long, CompletedCallback])
+    val newWsClient: WSConnectionHighLevel[F] => F[WebsocketClient[F]] = conn => for {
+      requestMap      <- Ref[F].of(Map.empty[Long, CompletedCallback])
       subscriptionMap <- Ref[F].of(Map.empty[SubscriptionId, Topic[F, Subscription.Notification]])
-      fiber           <- dispatch(conn, requestMap, subscriptionMap).repeat.compile.drain.attempt.flatMap {
-        case Left(e) => Concurrent[F].delay(e.printStackTrace())
-        case Right(a) => Applicative[F].pure(a)
-      }.start
+      fiber           <- dispatch(conn, requestMap, subscriptionMap).repeat.compile.drain.start
     } yield new WebsocketClient[F] {
 
       override def terminate: F[Unit] = fiber.cancel
 
-      override def doRequest[R: Decoder](request: Request): F[Deferred[F, Option[R]]] = {
+      override def doRequest[R: Decoder](request: Request): F[Deferred[F, R]] = {
         for {
-          promise <- Deferred[F, Option[R]]
+          promise <- Deferred[F, R]
           _       <- conn.send(fromRequest(request))
-          _       <- requestMap.update(_.updated(request.id, _.convertTo[R, F].flatMap(promise.complete)))
+          _       <- requestMap.update(_.updated(request.id.value, _.convertTo[R, F].flatMap(promise.complete)))
         } yield promise
       }
 
       private def subscribeHelper[RESP: Decoder](request: Request, queueSize: Int = 64): F[SubscriptionResult[F, RESP]] = {
         val result = for {
-          promise <- doRequest[String](request)
-          subscriptionIdOpt <- promise.get
-          subscriptionId <- assertNotNone[F, String]("subscriptionId", subscriptionIdOpt)
-          topic <- Topic[F, Subscription.Notification](Subscription.dummy)
-          _ <- subscriptionMap.update(_.updated(subscriptionId, topic))
+          promise        <- doRequest[String](request)
+          subscriptionId <- promise.get
+          topic          <- Topic[F, Subscription.Notification](Subscription.dummy)
+          _              <- subscriptionMap.update(_.updated(subscriptionId, topic))
         } yield (subscriptionId, topic.subscribe(queueSize))    // TODO: configurable
         result.map { case (id, stream) =>
           SubscriptionResult(id, stream.filter(_.valid).evalMap(_.convertTo[RESP, F]))
@@ -122,17 +120,17 @@ object WebsocketClient {
         subscribeHelper[Response.SyncStatus](Request.subscribeSyncStatus())
       }
 
-      override def unsubscribe(subscriptionId: String): F[Deferred[F, Option[Boolean]]] = {
+      override def unsubscribe(subscriptionId: String): F[Deferred[F, Boolean]] = {
         // send unsubscribe request first, and ignore the response
         for {
           promise <- doRequest[Boolean](Request.unsubscribe(subscriptionId))
-          _ <- subscriptionMap.update(_ - subscriptionId)
+          _       <- subscriptionMap.update(_ - subscriptionId)
         } yield promise
       }
     }
 
     Resource.suspend(resource).flatMap { conn =>
-      Resource.make(newClient(conn))(_.terminate)
+      Resource.make(newWsClient(conn))(_.terminate)
     }
   }
 

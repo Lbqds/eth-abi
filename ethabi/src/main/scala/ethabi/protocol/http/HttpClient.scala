@@ -7,7 +7,6 @@ import cats.effect._
 import cats.effect.concurrent.Deferred
 import cats.implicits._
 import io.circe.Decoder
-import io.circe.generic.auto._
 import org.http4s.client.jdkhttpclient.JdkHttpClient
 import org.http4s.EntityDecoder
 import org.http4s.EntityEncoder
@@ -26,7 +25,7 @@ object HttpClient {
       client <- JdkHttpClient.simple[F]
     } yield new HttpClient[F] {
 
-      override def doRequest[R: Decoder](request: Request): F[Deferred[F, Option[R]]] = {
+      override def doRequest[R: Decoder](request: Request): F[Deferred[F, R]] = {
         implicit val responseDecoder: EntityDecoder[F, Response] = circe.jsonOf[F, Response]
         implicit val requestEncoder: EntityEncoder[F, Request] = circe.jsonEncoderOf[F, Request]
 
@@ -40,10 +39,10 @@ object HttpClient {
         )
 
         for {
-          request <- requestF
+          request  <- requestF
           response <- client.expect[Response](request)
-          result <- response.convertTo[R, F]
-          promise <- Deferred[F, Option[R]]
+          result   <- response.convertTo[R, F]
+          promise  <- Deferred[F, R]
           _ <- promise.complete(result)
         } yield promise
 
@@ -53,21 +52,3 @@ object HttpClient {
     Resource.liftF[F, HttpClient[F]](httpClient)
   }
 }
-
-/*
-object HttpClientTest extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] = {
-    import HttpClient._
-    apply[IO]("http://127.0.0.1:8545").use { client =>
-      for {
-        p <- client.clientVersion
-        cVersion <- p.get
-        _ <- IO.delay(println(s"client version: $cVersion"))
-        p1 <- client.netVersion
-        nVersion <- p1.get
-        _ <- IO.delay(println(s"net version: $nVersion"))
-      } yield ExitCode.Success
-    }
-  }
-}
- */

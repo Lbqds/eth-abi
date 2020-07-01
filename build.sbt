@@ -4,11 +4,10 @@ lazy val scala212 = "2.12.8"
 lazy val scala213 = "2.13.1"
 lazy val ethAbiVersion = "0.3.0"
 
-def scalacOptionByVersion(version: String) = {
-  val optional = CrossVersion.partialVersion(version) match {
-    case Some((2, 12)) => Seq("-Ypartial-unification")
-    case _ => Seq()
-  }
+def scalacOptionByVersion(version: String): Seq[String] = {
+  val optional: Seq[String] =
+    if (priorTo213(version)) Seq("-Ypartial-unification")
+    else Seq("-Ymacro-annotations")
 
   Seq(
     "-encoding",
@@ -25,6 +24,13 @@ def scalacOptionByVersion(version: String) = {
     "-language:postfixOps") ++ optional
 }
 
+def priorTo213(version: String): Boolean = {
+  CrossVersion.partialVersion(version) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+  }
+}
+
 val commonSettings = Seq(
   organization := "com.github.lbqds",
   scalaVersion := scala213,
@@ -32,6 +38,18 @@ val commonSettings = Seq(
   version := ethAbiVersion,
   scalacOptions ++= scalacOptionByVersion(scalaVersion.value),
   test in assembly := {}
+)
+
+val macroSettings = Seq(
+  libraryDependencies ++= (Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
+    "org.scala-lang" % "scala-compiler" % scalaVersion.value % Provided
+  ) ++ (
+    if (priorTo213(scalaVersion.value)) Seq(
+      compilerPlugin("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)
+    ) else Nil
+  ))
+
 )
 
 import xerial.sbt.Sonatype._
@@ -58,6 +76,7 @@ val publishSettings = Seq(
 lazy val root =
   Project(id = "root", base = file("."))
     .settings(commonSettings)
+    .settings(macroSettings)
     .settings(name := "root")
     .settings(publishSettings)
     .aggregate(ethabi, codegen, examples)
@@ -66,9 +85,18 @@ lazy val root =
 lazy val ethabi =
   Project(id = "ethabi", base = file("ethabi"))
     .settings(commonSettings)
+    .settings(macroSettings)
     .settings(name := "ethabi")
     .settings(Dependencies.deps)
     .settings(publishSettings)
+    .settings(
+      unmanagedSourceDirectories in Compile += {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => (scalaSource in Compile).value.getParentFile / "scala-2.13+"
+          case _                       => (scalaSource in Compile).value.getParentFile / "scala-2.13-"
+        }
+      }
+    )
     .enablePlugins(spray.boilerplate.BoilerplatePlugin)
     .disablePlugins(sbtassembly.AssemblyPlugin)
 

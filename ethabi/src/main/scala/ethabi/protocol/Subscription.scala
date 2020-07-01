@@ -7,6 +7,7 @@ import cats.Applicative
 import fs2.Stream
 import io.circe.Decoder
 import io.circe.Json
+import io.circe.generic.JsonCodec
 
 object Subscription {
 
@@ -26,7 +27,9 @@ object Subscription {
   private[protocol] val dummy = Notification("", "", NotificationParam(Json.Null, ""))
 
   // keep this struct for auto derived json Encoder/Decoder from circe
+  @JsonCodec(decodeOnly = true)
   private[protocol] case class NotificationParam(result: Json, subscription: String)
+  @JsonCodec(decodeOnly = true)
   private[protocol] case class Notification(jsonrpc: String, method: String, params: NotificationParam) {
     def subscriptionId: String = params.subscription
 
