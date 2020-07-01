@@ -19,39 +19,39 @@ final class KVStore[F[_]: ConcurrentEffect: Timer] private (private val impl: Co
   def isDeployed: F[Boolean] = impl.isDeployed
   def address: F[Option[Address]] = impl.address
   def loadFrom(address: Address): F[Unit] = impl.load(address)
-  def data(fresh1: Uint16, sender: Address, opt: TransactionOpt): F[Option[TupleType1[DynamicBytes]]] = {
+  def data(fresh1: Uint16, sender: Address, opt: TransactionOpt): F[TupleType1[DynamicBytes]] = {
     val paramsEncoded = TypeInfo[TupleType1[Uint16]].encode(TupleType1.apply[Uint16](fresh1))
     val functionId = Hex.hex2Bytes("0df584f1")
     val encoded = functionId ++ paramsEncoded
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[DynamicBytes]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[DynamicBytes]].decode(data, 0)
       result._1
     }
   }
-  def set(_key: Uint16, _value: DynamicBytes, sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def set(_key: Uint16, _value: DynamicBytes, sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val paramsEncoded = TypeInfo[TupleType2[Uint16, DynamicBytes]].encode(TupleType2.apply[Uint16, DynamicBytes](_key, _value))
     val functionId = Hex.hex2Bytes("385ddf00")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(CallArgs(encoded, sender, opt))
   }
-  def get(_key: Uint16, sender: Address, opt: TransactionOpt): F[Option[TupleType1[DynamicBytes]]] = {
+  def get(_key: Uint16, sender: Address, opt: TransactionOpt): F[TupleType1[DynamicBytes]] = {
     val paramsEncoded = TypeInfo[TupleType1[Uint16]].encode(TupleType1.apply[Uint16](_key))
     val functionId = Hex.hex2Bytes("b3fd15a0")
     val encoded = functionId ++ paramsEncoded
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[DynamicBytes]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[DynamicBytes]].decode(data, 0)
       result._1
     }
   }
-  def deploy(sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def deploy(sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val encoded = Hex.hex2Bytes(binary)
     impl.deploy(CallArgs(encoded, sender, opt))
   }
   private def decodeRecord(log: Log): Event = {
-    var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ (TypeInfo[Address])
-    typeInfos = typeInfos :+ (TypeInfo[Uint16])
-    typeInfos = typeInfos :+ (TypeInfo[TupleType1[DynamicBytes]])
+    val typeInfo4 = TypeInfo[Address]
+    val typeInfo5 = TypeInfo[Uint16]
+    val typeInfo6 = TypeInfo[TupleType1[DynamicBytes]]
+    val typeInfos: List[TypeInfo[SolType]] = List(typeInfo4, typeInfo5, typeInfo6)
     Event.decode(typeInfos, log)
   }
   def subscribeRecord: F[SubscriptionResult[F, Event]] = {

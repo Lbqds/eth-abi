@@ -19,115 +19,115 @@ final class Token[F[_]: ConcurrentEffect: Timer] private (private val impl: Cont
   def isDeployed: F[Boolean] = impl.isDeployed
   def address: F[Option[Address]] = impl.address
   def loadFrom(address: Address): F[Unit] = impl.load(address)
-  def name(sender: Address, opt: TransactionOpt): F[Option[TupleType1[StringType]]] = {
+  def name(sender: Address, opt: TransactionOpt): F[TupleType1[StringType]] = {
     val encoded = Hex.hex2Bytes("06fdde03")
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[StringType]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[StringType]].decode(data, 0)
       result._1
     }
   }
-  def approve(spender: Address, value: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def approve(spender: Address, value: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](spender, value))
     val functionId = Hex.hex2Bytes("095ea7b3")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(CallArgs(encoded, sender, opt))
   }
-  def totalSupply(sender: Address, opt: TransactionOpt): F[Option[TupleType1[Uint256]]] = {
+  def totalSupply(sender: Address, opt: TransactionOpt): F[TupleType1[Uint256]] = {
     val encoded = Hex.hex2Bytes("18160ddd")
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[Uint256]].decode(data, 0)
       result._1
     }
   }
-  def transferFrom(from: Address, to: Address, value: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def transferFrom(from: Address, to: Address, value: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val paramsEncoded = TypeInfo[TupleType3[Address, Address, Uint256]].encode(TupleType3.apply[Address, Address, Uint256](from, to, value))
     val functionId = Hex.hex2Bytes("23b872dd")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(CallArgs(encoded, sender, opt))
   }
-  def DECIMALS(sender: Address, opt: TransactionOpt): F[Option[TupleType1[Uint8]]] = {
+  def DECIMALS(sender: Address, opt: TransactionOpt): F[TupleType1[Uint8]] = {
     val encoded = Hex.hex2Bytes("2e0f2625")
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[Uint8]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[Uint8]].decode(data, 0)
       result._1
     }
   }
-  def INITIAL_SUPPLY(sender: Address, opt: TransactionOpt): F[Option[TupleType1[Uint256]]] = {
+  def INITIAL_SUPPLY(sender: Address, opt: TransactionOpt): F[TupleType1[Uint256]] = {
     val encoded = Hex.hex2Bytes("2ff2e9dc")
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[Uint256]].decode(data, 0)
       result._1
     }
   }
-  def decimals(sender: Address, opt: TransactionOpt): F[Option[TupleType1[Uint8]]] = {
+  def decimals(sender: Address, opt: TransactionOpt): F[TupleType1[Uint8]] = {
     val encoded = Hex.hex2Bytes("313ce567")
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[Uint8]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[Uint8]].decode(data, 0)
       result._1
     }
   }
-  def increaseAllowance(spender: Address, addedValue: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def increaseAllowance(spender: Address, addedValue: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](spender, addedValue))
     val functionId = Hex.hex2Bytes("39509351")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(CallArgs(encoded, sender, opt))
   }
-  def balanceOf(owner: Address, sender: Address, opt: TransactionOpt): F[Option[TupleType1[Uint256]]] = {
+  def balanceOf(owner: Address, sender: Address, opt: TransactionOpt): F[TupleType1[Uint256]] = {
     val paramsEncoded = TypeInfo[TupleType1[Address]].encode(TupleType1.apply[Address](owner))
     val functionId = Hex.hex2Bytes("70a08231")
     val encoded = functionId ++ paramsEncoded
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[Uint256]].decode(data, 0)
       result._1
     }
   }
-  def symbol(sender: Address, opt: TransactionOpt): F[Option[TupleType1[StringType]]] = {
+  def symbol(sender: Address, opt: TransactionOpt): F[TupleType1[StringType]] = {
     val encoded = Hex.hex2Bytes("95d89b41")
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[StringType]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[StringType]].decode(data, 0)
       result._1
     }
   }
-  def decreaseAllowance(spender: Address, subtractedValue: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def decreaseAllowance(spender: Address, subtractedValue: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](spender, subtractedValue))
     val functionId = Hex.hex2Bytes("a457c2d7")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(CallArgs(encoded, sender, opt))
   }
-  def transfer(to: Address, value: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def transfer(to: Address, value: Uint256, sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val paramsEncoded = TypeInfo[TupleType2[Address, Uint256]].encode(TupleType2.apply[Address, Uint256](to, value))
     val functionId = Hex.hex2Bytes("a9059cbb")
     val encoded = functionId ++ paramsEncoded
     impl.sendTransaction(CallArgs(encoded, sender, opt))
   }
-  def allowance(owner: Address, spender: Address, sender: Address, opt: TransactionOpt): F[Option[TupleType1[Uint256]]] = {
+  def allowance(owner: Address, spender: Address, sender: Address, opt: TransactionOpt): F[TupleType1[Uint256]] = {
     val paramsEncoded = TypeInfo[TupleType2[Address, Address]].encode(TupleType2.apply[Address, Address](owner, spender))
     val functionId = Hex.hex2Bytes("dd62ed3e")
     val encoded = functionId ++ paramsEncoded
-    for (promise <- impl.call(CallArgs(encoded, sender, opt)); dataOpt <- promise.get) yield dataOpt.map { bytes => 
-      val result = TypeInfo[TupleType1[Uint256]].decode(bytes, 0)
+    for (promise <- impl.call(CallArgs(encoded, sender, opt)); data <- promise.get) yield {
+      val result = TypeInfo[TupleType1[Uint256]].decode(data, 0)
       result._1
     }
   }
-  def deploy(sender: Address, opt: TransactionOpt): F[Deferred[F, Option[Hash]]] = {
+  def deploy(sender: Address, opt: TransactionOpt): F[Deferred[F, Hash]] = {
     val encoded = Hex.hex2Bytes(binary)
     impl.deploy(CallArgs(encoded, sender, opt))
   }
   private def decodeTransfer(log: Log): Event = {
-    var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ (TypeInfo[Address])
-    typeInfos = typeInfos :+ (TypeInfo[Address])
-    typeInfos = typeInfos :+ (TypeInfo[TupleType1[Uint256]])
+    val typeInfo14 = TypeInfo[Address]
+    val typeInfo15 = TypeInfo[Address]
+    val typeInfo16 = TypeInfo[TupleType1[Uint256]]
+    val typeInfos: List[TypeInfo[SolType]] = List(typeInfo14, typeInfo15, typeInfo16)
     Event.decode(typeInfos, log)
   }
   def subscribeTransfer: F[SubscriptionResult[F, Event]] = {
     for (result <- impl.subscribeLogs(Hash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeTransfer))
   }
   private def decodeApproval(log: Log): Event = {
-    var typeInfos = Seq.empty[TypeInfo[SolType]]
-    typeInfos = typeInfos :+ (TypeInfo[Address])
-    typeInfos = typeInfos :+ (TypeInfo[Address])
-    typeInfos = typeInfos :+ (TypeInfo[TupleType1[Uint256]])
+    val typeInfo17 = TypeInfo[Address]
+    val typeInfo18 = TypeInfo[Address]
+    val typeInfo19 = TypeInfo[TupleType1[Uint256]]
+    val typeInfos: List[TypeInfo[SolType]] = List(typeInfo17, typeInfo18, typeInfo19)
     Event.decode(typeInfos, log)
   }
   def subscribeApproval: F[SubscriptionResult[F, Event]] = {

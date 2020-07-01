@@ -67,7 +67,7 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
   private [codegen] def genConstructor: Defn = {
     assert(isConstructor)
     val (args, encodeStat) = ctorArgsAndEncodeStat
-    q"""def deploy(..${args :+ sender :+ opt}): F[Deferred[F, Option[Hash]]] = {
+    q"""def deploy(..${args :+ sender :+ opt}): F[Deferred[F, Hash]] = {
       ..${encodeStat.stats}
       impl.deploy(CallArgs(encoded, sender, opt))
      }"""
@@ -79,9 +79,9 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
         q"""
           for {
             promise <- impl.call(CallArgs(encoded, sender, opt))
-            dataOpt <- promise.get
-          } yield dataOpt.map { bytes =>
-            val result = ${decodeParams(retTpe.get, Term.Name("bytes"))}
+            data    <- promise.get
+          } yield {
+            val result = ${decodeParams(retTpe.get, Term.Name("data"))}
             result._1
           }
          """
@@ -96,7 +96,7 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
   private def genConstantFunction(retTpe: Option[Type]): Defn = {
     val (args, encodeStat) = funcArgsAndEncodeStat
     val body = Term.Block(encodeStat.stats ++ callAndDecodeStat(retTpe).stats)
-    val returnType = retTpe.fold[Type](t"F[Deferred[F, Option[Array[Byte]]]]")(t => t"F[Option[$t]]")
+    val returnType = retTpe.fold[Type](t"F[Deferred[F, Array[Byte]]]")(t => t"F[$t]")
     q"""
         def ${Term.Name(name.get)}(..${args :+ sender :+ opt}): $returnType = {
           ..${body.stats}
@@ -123,18 +123,30 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
   // FIXME: only support indexed event first, then non-indexed event
   private [codegen] def genEventDecodeFunc: Defn.Def = {
     assert(isEvent && !isAnonymous && name.isDefined)
-    val typeInfosDecl = q"""var typeInfos = Seq.empty[TypeInfo[SolType]]"""
+
+    var decls = Seq.empty[String]
+    def nextName: Term.Name = {
+      val name = Term.fresh("typeInfo")
+      decls = decls :+ name.value
+      name
+    }
+
     val (indexedTypes, nonIndexedTypes) = inputs.toList.flatten.partition(_.isIndexed)
-    val indexedTypeInfos = indexedTypes.filter(_.isIndexed).map(p => q"""typeInfos = typeInfos :+ TypeInfo[${p.tpe}]""")
+    val indexedTypeInfos = indexedTypes.filter(_.isIndexed).map(p => q"""val ${Pat.Var(nextName)} = TypeInfo[${p.tpe}]""")
     val nonIndexTypeInfo = if (nonIndexedTypes.nonEmpty) {
       val tupleType = Type.Name(s"TupleType${nonIndexedTypes.length}")
-      Some(q"""typeInfos = typeInfos :+ TypeInfo[${Type.Apply(tupleType, nonIndexedTypes.map(_.tpe))}]""")
+      Some(q"""val ${Pat.Var(nextName)} = TypeInfo[${Type.Apply(tupleType, nonIndexedTypes.map(_.tpe))}]""")
     } else None
-    val stats: List[Stat] = (typeInfosDecl +: indexedTypeInfos) ++ nonIndexTypeInfo.toList
+
+    val typeInfoDecls: List[Stat] = indexedTypeInfos ++ nonIndexTypeInfo.toList
+    val declCodeString = s"""val typeInfos: List[TypeInfo[SolType]] = List${decls.mkString("(", ", ", ")")}"""
+    val typeInfoDecl: Stat = declCodeString.parse[Stat].get
     val methodName = Term.Name(s"decode${name.get.capitalize}")
+
     q"""
         private def $methodName($log): Event = {
-          ..$stats
+          ..$typeInfoDecls
+          $typeInfoDecl
           Event.decode(typeInfos, log)
         }
      """
@@ -158,7 +170,7 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
 }
 
 object AbiDefinition {
-  private val defaultRetTpe = t"F[Deferred[F, Option[Hash]]]"
+  private val defaultRetTpe = t"F[Deferred[F, Hash]]"
   private val opt = Term.Param(List.empty, Term.Name("opt"), Some(Type.Name("TransactionOpt")), None)
   private val sender = Term.Param(List.empty, Term.Name("sender"), Some(Type.Name("Address")), None)
   private val log = Term.Param(List.empty, Term.Name("log"), Some(Type.Name("Log")), None)
