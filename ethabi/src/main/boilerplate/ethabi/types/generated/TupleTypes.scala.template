@@ -1,0 +1,51 @@
+
+package ethabi
+package types
+package generated
+
+/*
+object TupleType0 extends SolType {
+  def apply() = TupleType0
+
+  implicit lazy val typeInfo: TypeInfo[TupleType0.type] = new TypeInfo[TupleType0.type] {
+    override def name: String = "tuple"
+    override def isStatic: Boolean = true
+    override def encode[U >: TupleType0.type](value: U): Array[Byte] = new Array[Byte](0)
+    override def decode(bytes: Array[Byte], position: Int): (TupleType0.type, Int) = (TupleType0, 0)
+  }
+}
+*/
+
+[1..22#final case class TupleType1[[#T1 <: SolType#]]([#_1: T1#]) extends TupleType {
+  override def toSeq: Seq[SolType] = Seq([#_1#])
+  override def toString = toSeq.mkString("[", ", ", "]")
+}#
+]
+
+[1..22#object TupleType1 {
+  // create from a list
+  def from[[#T1 <: SolType#]](values: Seq[SolType]): TupleType1[[#T1#]] = TupleType1([#values(0).asInstanceOf[T1]#])
+
+  implicit def typeInfo[[#T1 <: SolType#]](implicit [#typeInfo1: TypeInfo[T1]#]): TypeInfo[TupleType1[[#T1#]]] = {
+    new TypeInfo[TupleType1[[#T1#]]] {
+      override def name: String = "tuple"
+
+      override def isStatic: Boolean = [#typeInfo1.isStatic# && ]
+
+      override def encode[U >: TupleType1[[#T1#]]](value: U): Array[Byte] = {
+        val original = value.asInstanceOf[TupleType1[[#T1#]]]
+        val typeInfos = List([#typeInfo1#])
+        val encodedValues = List([#typeInfo1.encode(original._1)#])
+        TupleType.encode(typeInfos, encodedValues)
+      }
+
+      override def decode(bytes: Array[Byte], position: Int): (TupleType1[[#T1#]], Int) = {
+        val typeInfos = List([#typeInfo1#])
+        val (results, consumed) = TupleType.decode(bytes, position, typeInfos)
+        (TupleType1[[#T1#]]([#results(0).asInstanceOf[T1]#]), consumed)
+      }
+    }
+  }
+}#
+
+]

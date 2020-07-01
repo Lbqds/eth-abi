@@ -3,7 +3,7 @@ package codegen
 import io.circe.jawn.decode
 import io.circe.generic.auto._
 import scala.meta._
-import ethabi.util.{Hash, Hex}
+import ethabi.util._
 
 // fallback function have no name and inputs
 final case class AbiDefinition(`type`: String, name: Option[String], inputs: Option[Seq[Param]], outputs: Option[Seq[Param]],
@@ -67,15 +67,20 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
   private [codegen] def genConstructor: Defn = {
     assert(isConstructor)
     val (args, encodeStat) = ctorArgsAndEncodeStat
-    val body = Term.Block(encodeStat.stats :+ q"impl.deploy(encoded, sender, opt)")
-    Defn.Def(List.empty, Term.Name("deploy"), List.empty, List(args :+ sender :+ opt), Some(Type.Name("Unit")), body)
+    q"""def deploy(..${args :+ sender :+ opt}): F[Deferred[F, Option[Hash]]] = {
+      ..${encodeStat.stats}
+      impl.deploy(CallArgs(encoded, sender, opt))
+     }"""
   }
 
   private def callAndDecodeStat(retTpe: Option[Type]) = {
     if (retTpe.isDefined) {
       Term.Block(List(
         q"""
-          impl.call(encoded, sender, opt).map { bytes =>
+          for {
+            promise <- impl.call(CallArgs(encoded, sender, opt))
+            dataOpt <- promise.get
+          } yield dataOpt.map { bytes =>
             val result = ${decodeParams(retTpe.get, Term.Name("bytes"))}
             result._1
           }
@@ -91,38 +96,48 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
   private def genConstantFunction(retTpe: Option[Type]): Defn = {
     val (args, encodeStat) = funcArgsAndEncodeStat
     val body = Term.Block(encodeStat.stats ++ callAndDecodeStat(retTpe).stats)
-    Defn.Def(List.empty, Term.Name(name.get), List.empty, List(args :+ sender :+ opt), retTpe.map(t => Type.Apply(Type.Name("Future"), List(t))), body)
+    val returnType = retTpe.fold[Type](t"F[Deferred[F, Option[Array[Byte]]]]")(t => t"F[Option[$t]]")
+    q"""
+        def ${Term.Name(name.get)}(..${args :+ sender :+ opt}): $returnType = {
+          ..${body.stats}
+        }
+     """
   }
 
-  private def genTransactionFunction(retTpe: Option[Type]): Defn = {
+  private def genTransactionFunction(): Defn = {
     val (args, encodeStat) = funcArgsAndEncodeStat
-    val body = Term.Block(encodeStat.stats :+ q"impl.sendTransaction(encoded, sender, opt)")
-    Defn.Def(List.empty, Term.Name(name.get), List.empty, List(args :+ sender :+ opt), retTpe, body)
+    q"""
+        def ${Term.Name(name.get)}(..${args :+ sender :+ opt}): $defaultRetTpe = {
+          ..${encodeStat.stats}
+          impl.sendTransaction(CallArgs(encoded, sender, opt))
+        }
+     """
   }
 
   private [codegen] def genFunction: Defn = {
     assert(isFunction && name.isDefined)
     if (isConstant) genConstantFunction(returnType)
-    else genTransactionFunction(Some(defaultRetTpe))
+    else genTransactionFunction()
   }
 
   // FIXME: only support indexed event first, then non-indexed event
   private [codegen] def genEventDecodeFunc: Defn.Def = {
     assert(isEvent && !isAnonymous && name.isDefined)
     val typeInfosDecl = q"""var typeInfos = Seq.empty[TypeInfo[SolType]]"""
-    val indexedTypeInfos = inputs.map(_.filter(_.isIndexed).map(p => q"""typeInfos = typeInfos :+ TypeInfo[${p.tpe}]"""))
-    val nonIndexTypeInfo = inputs.flatMap { params =>
-      val tpes = params.filter(!_.isIndexed).map(_.tpe).toList
-      if (tpes.nonEmpty) {
-        val tupleType = Type.Name(s"TupleType${tpes.length}")
-        Some(q"""typeInfos = typeInfos :+ TypeInfo[${Type.Apply(tupleType, tpes)}]""")
-      } else None
-    }
-    var stats: List[Stat] = List(typeInfosDecl)
-    if (indexedTypeInfos.isDefined) stats = stats ++ indexedTypeInfos.get
-    if (nonIndexTypeInfo.isDefined) stats = stats :+ nonIndexTypeInfo.get
-    stats = stats :+ q"""EventValue.decodeEvent(typeInfos, log)"""
-    Defn.Def(List.empty, Term.Name(s"decode${name.get.capitalize}"), List.empty, List(List(log)), Some(Type.Name("EventValue")), Term.Block(stats))
+    val (indexedTypes, nonIndexedTypes) = inputs.toList.flatten.partition(_.isIndexed)
+    val indexedTypeInfos = indexedTypes.filter(_.isIndexed).map(p => q"""typeInfos = typeInfos :+ TypeInfo[${p.tpe}]""")
+    val nonIndexTypeInfo = if (nonIndexedTypes.nonEmpty) {
+      val tupleType = Type.Name(s"TupleType${nonIndexedTypes.length}")
+      Some(q"""typeInfos = typeInfos :+ TypeInfo[${Type.Apply(tupleType, nonIndexedTypes.map(_.tpe))}]""")
+    } else None
+    val stats: List[Stat] = (typeInfosDecl +: indexedTypeInfos) ++ nonIndexTypeInfo.toList
+    val methodName = Term.Name(s"decode${name.get.capitalize}")
+    q"""
+        private def $methodName($log): Event = {
+          ..$stats
+          Event.decode(typeInfos, log)
+        }
+     """
   }
 
   private [codegen] def genSubscribeEventFunc: Defn.Def = {
@@ -131,10 +146,11 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
     val decodeFunc = Term.Name(s"decode${name.get.capitalize}")
     val topic = signatureHash.get.toString
     q"""
-       def $funcName: Source[EventValue, NotUsed] = {
-         val query = LogQuery.from(contractAddress, Hash(${Lit.String(topic)}))
-         impl.subscribeLogs(query).map($decodeFunc)
-       }
+        def $funcName: F[SubscriptionResult[F, Event]] = {
+          for {
+            result <- impl.subscribeLogs(Hash(${Lit.String(topic)}))
+          } yield SubscriptionResult[F, Event](result.id, result.stream.map($decodeFunc))
+        }
      """
   }
 
@@ -142,7 +158,7 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
 }
 
 object AbiDefinition {
-  private val defaultRetTpe = Type.Apply(Type.Name("Future"), List(Type.Name("Hash")))
+  private val defaultRetTpe = t"F[Deferred[F, Option[Hash]]]"
   private val opt = Term.Param(List.empty, Term.Name("opt"), Some(Type.Name("TransactionOpt")), None)
   private val sender = Term.Param(List.empty, Term.Name("sender"), Some(Type.Name("Address")), None)
   private val log = Term.Param(List.empty, Term.Name("log"), Some(Type.Name("Log")), None)

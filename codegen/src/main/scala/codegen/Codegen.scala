@@ -1,58 +1,68 @@
 package codegen
 
-import scala.io.Source
 import io.circe.jawn.decode
 import io.circe.generic.auto._
 import scala.meta._
+import scala.io.Source
 
 object Codegen {
-  private def genImpl: List[Stat] = List(
-    q"private val impl = Contract(endpoint)",
-    q"import impl.dispatcher",
-    q"def service = impl.service"
-  )
-  private def genBinary(code: String): List[Stat] = List(q"""private val binary = ${Lit.String(code)}""")
+
   private def genFunctions(abiDefinitions: Seq[AbiDefinition]): List[Stat] =
     abiDefinitions.filter(_.isFunction).map(_.genFunction).toList
+
   private def genCtor(abiDefinitions: Seq[AbiDefinition]): List[Stat] =
     abiDefinitions.filter(_.isConstructor).map(_.genConstructor).toList
+
   private def genEvent(abiDefinitions: Seq[AbiDefinition]): List[Stat] =
     abiDefinitions.filter(_.isEvent).flatMap(_.genEvent).toList
-  private def genSupMethods: List[Stat] = {
-    val isDeployed = q"def isDeployed: Boolean = impl.isDeployed"
-    val contractAddress = q"def contractAddress: Address = impl.address.get"
-    val loadFrom = q"def loadFrom(contractAddress: Address) = impl.load(contractAddress)"
-    List(isDeployed, contractAddress, loadFrom)
-  }
 
-  private def stats(abiFile: String, binFile: Option[String]) = {
-    val source = Source.fromFile(abiFile).getLines().mkString
-    val abiDefs = decode[Seq[AbiDefinition]](source).getOrElse(throw new RuntimeException("invalid abi format"))
-    val code = binFile.map(f => Source.fromFile(f).getLines().mkString)
-    genImpl ::: genBinary(code.getOrElse("")) ::: genFunctions(abiDefs) ::: genCtor(abiDefs) ::: genEvent(abiDefs) ::: genSupMethods
-  }
+  private[codegen] def codeGen(abiFile: String, binFile: Option[String], packages: List[String], className: String): Pkg = {
 
-  def codeGen(abiFile: String, binFile: Option[String], packages: List[String], className: String): Pkg  = {
-    val contents = stats(abiFile, binFile)
-    val template = Template(List.empty, List.empty, Self(Term.Name("self"), None), contents)
-    val primary = Ctor.Primary(List.empty, Term.Name(className), List(List(Term.Param(List.empty, Term.Name("endpoint"), Some(Type.Name("String")), None))))
-    val classDef = Defn.Class(List(Mod.Final()), Type.Name(className), List.empty, primary, template)
+    val abiFileHandler = Source.fromFile(abiFile)
+    val abiDefs = decode[Seq[AbiDefinition]](abiFileHandler.getLines.mkString).getOrElse(throw new RuntimeException("invalid abi format"))
+    val binFileHandler = binFile.map(f => Source.fromFile(f))
+    val binCodeStr = binFileHandler.map(_.getLines.mkString).getOrElse("")
+
+    abiFileHandler.close()
+    binFileHandler.foreach(_.close())
+
+    val contents = genFunctions(abiDefs) ::: genCtor(abiDefs) ::: genEvent(abiDefs)
     val selector: (Term.Ref, Term.Name) => Term.Ref = (p, c) => Term.Select(p, c)
     val packagesDef = packages.map(pkg => Term.Name(pkg)).reduceLeft(selector)
 
+    val typeName = Type.Name(className)
+    val termName = Term.Name(className)
+
     q"""
         package $packagesDef {
-          import akka.NotUsed
-          import akka.stream.scaladsl.Source
-          import ethabi.util.{Hex, Hash}
+          import ethabi.util._
           import ethabi.types._
           import ethabi.types.generated._
-          import ethabi.protocol.{Contract, EventValue}
+          import ethabi.protocol._
           import ethabi.protocol.Request._
           import ethabi.protocol.Response.Log
-          import scala.concurrent.Future
+          import ethabi.protocol.Subscription.SubscriptionResult
+          import cats.implicits._
+          import cats.Applicative
+          import cats.effect._
+          import cats.effect.concurrent._
 
-          $classDef
+          final class $typeName[F[_]: ConcurrentEffect: Timer] private (private val impl: Contract[F]) { self =>
+            private val binary = ${Lit.String(binCodeStr)}
+
+            def client: F[Client[F]] = impl.client
+            def subscriber: F[Subscriber[F]] = impl.subscriber
+            def isDeployed: F[Boolean] = impl.isDeployed
+            def address: F[Option[Address]] = impl.address
+            def loadFrom(address: Address): F[Unit] = impl.load(address)
+            ..$contents
+          }
+
+          object $termName {
+            def apply[F[_]: ConcurrentEffect: Timer](endpoint: String)(implicit CS: ContextShift[F]): Resource[F, $typeName[F]] = {
+              Contract[F](endpoint).flatMap(impl => Resource.liftF(Applicative[F].pure(new $typeName(impl))))
+            }
+          }
         }
      """
   }

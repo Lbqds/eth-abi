@@ -2,23 +2,35 @@ import sbtassembly.AssemblyPlugin.defaultShellScript
 
 lazy val scala212 = "2.12.8"
 lazy val scala213 = "2.13.1"
-lazy val ver = "0.2.0"
+lazy val ethAbiVersion = "0.3.0"
 
-val commonSettings = Seq(
-  organization := "com.github.lbqds",
-  crossScalaVersions := Seq(scala212, scala213),
-  version := ver,
-  scalacOptions ++= Seq(
-    "-encoding", "utf8",
-//    "-Xfatal-warnings",
+def scalacOptionByVersion(version: String) = {
+  val optional = CrossVersion.partialVersion(version) match {
+    case Some((2, 12)) => Seq("-Ypartial-unification")
+    case _ => Seq()
+  }
+
+  Seq(
+    "-encoding",
+    "utf8",
+    "-Xfatal-warnings",
+    "-Xlint",
     "-deprecation",
-//    "-unchecked",
+    "-unchecked",
     "-language:implicitConversions",
     "-language:higherKinds",
     "-language:existentials",
-//    "-Xlog-implicits",
-//    "-Xlog-implicit-conversions",
-    "-language:postfixOps"),
+    //"-Xlog-implicits",
+    //"-Xlog-implicit-conversions",
+    "-language:postfixOps") ++ optional
+}
+
+val commonSettings = Seq(
+  organization := "com.github.lbqds",
+  scalaVersion := scala213,
+  crossScalaVersions := Seq(scala212, scala213),
+  version := ethAbiVersion,
+  scalacOptions ++= scalacOptionByVersion(scalaVersion.value),
   test in assembly := {}
 )
 
@@ -43,10 +55,18 @@ val publishSettings = Seq(
   publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true)
 )
 
-lazy val ethabi =
-  Project(id = "eth-abi", base = file("."))
+lazy val root =
+  Project(id = "root", base = file("."))
     .settings(commonSettings)
-    .settings(name := "eth-abi")
+    .settings(name := "root")
+    .settings(publishSettings)
+    .aggregate(ethabi, codegen, examples)
+    .disablePlugins(sbtassembly.AssemblyPlugin)
+
+lazy val ethabi =
+  Project(id = "ethabi", base = file("ethabi"))
+    .settings(commonSettings)
+    .settings(name := "ethabi")
     .settings(Dependencies.deps)
     .settings(publishSettings)
     .enablePlugins(spray.boilerplate.BoilerplatePlugin)
@@ -60,14 +80,13 @@ lazy val codegen =
     .settings(
       name := "codegen",
       assemblyOption in assembly := (assemblyOption in assembly).value.copy(prependShellScript = Some(defaultShellScript)),
-      assemblyJarName := s"abi-codegen-$ver",
+      assemblyJarName := s"abi-codegen-$ethAbiVersion",
       skip in publish := true
     )
 
-lazy val example =
+lazy val examples =
   Project(id = "examples", base = file("examples"))
     .settings(commonSettings)
-    .settings(Dependencies.examplesDpes)
     .dependsOn(ethabi)
     .disablePlugins(sbtassembly.AssemblyPlugin)
     .settings(

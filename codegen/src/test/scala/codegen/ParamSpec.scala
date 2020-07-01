@@ -1,14 +1,15 @@
 package codegen
 
-import org.scalatest.{WordSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import io.circe.jawn.decode
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-class ParamSpec extends WordSpec with Matchers {
+class ParamSpec extends AnyWordSpec with Matchers {
   "test deserialize argument(without components)" in {
     val json = """{"name":"balance","type":"uint256"}"""
-    val argument = decode[Param](json).right.get
+    val argument = decode[Param](json).getOrElse(null)
     argument.name shouldBe "balance"
     argument.`type` shouldBe "uint256"
     argument.components shouldBe None
@@ -23,7 +24,7 @@ class ParamSpec extends WordSpec with Matchers {
 
   "test deserialize argument(with components)" in {
     val json = """{"name":"account","type":"tuple","components":[{"name":"name","type":"string"}],"indexed":null}"""
-    val argument = decode[Param](json).right.get
+    val argument = decode[Param](json).getOrElse(null)
     argument.name shouldBe "account"
     argument.`type` shouldBe "tuple"
     argument.components.get.head.name shouldBe "name"
@@ -69,7 +70,7 @@ class ParamSpec extends WordSpec with Matchers {
         |  ]
         |}
       """.stripMargin
-    val result = decode[Param](json).right.get
+    val result = decode[Param](json).getOrElse(null)
     val components = result.components.get
     components.length shouldBe 3
     val nested = components(2)
