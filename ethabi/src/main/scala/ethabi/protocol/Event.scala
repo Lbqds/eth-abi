@@ -3,7 +3,6 @@ package protocol
 
 import Response._
 import ethabi.types._
-import ethabi.types.generated.Bytes32
 
 final case class Event(indexedValues: Seq[SolType], nonIndexedValues: Seq[SolType]) {
   override def toString: String = {
@@ -21,8 +20,8 @@ object Event {
     val topics = log.topics.slice(1, log.topics.length)
     val indexedValues = topics.zip(typeInfos).map {
       case (bytes, typeInfo) =>
-        if (typeInfo.isStatic) typeInfo.decode(bytes, 0)._1
-        else Bytes32(bytes)
+        if (typeInfo.isStatic) typeInfo.decode(bytes.value, 0)._1
+        else bytes
     }
     val nonIndexedTypeInfo = typeInfos.slice(topics.length, typeInfos.length).headOption
     val nonIndexedValues = nonIndexedTypeInfo.map(_.decode(log.data, 0)._1.asInstanceOf[TupleType].toSeq)

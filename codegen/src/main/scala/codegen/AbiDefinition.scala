@@ -160,7 +160,7 @@ final case class AbiDefinition(`type`: String, name: Option[String], inputs: Opt
     q"""
         def $funcName: F[SubscriptionResult[F, Event]] = {
           for {
-            result <- impl.subscribeLogs(Hash(${Lit.String(topic)}))
+            result <- impl.subscribeLogs(Bytes32.from(${Lit.String(topic)}))
           } yield SubscriptionResult[F, Event](result.id, result.stream.map($decodeFunc))
         }
      """

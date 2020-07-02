@@ -6,6 +6,7 @@ import cats.implicits._
 import cats.effect.concurrent._
 import cats.effect._
 import ethabi.types._
+import ethabi.types.generated.Bytes32
 import ethabi.util._
 import ws.WebsocketClient
 import Request._
@@ -48,7 +49,7 @@ trait Contract[F[_]] {
   def call(args: CallArgs): F[Deferred[F, Array[Byte]]]
 
   // subscribe contract event logs
-  def subscribeLogs(topic: Hash): F[SubscriptionResult[F, Log]]
+  def subscribeLogs(topic: Bytes32): F[SubscriptionResult[F, Log]]
 }
 
 object Contract {
@@ -101,7 +102,7 @@ object Contract {
         promise <- cli.call(callData)
       } yield promise
 
-      override def subscribeLogs(topic: Hash): F[SubscriptionResult[F, Log]] = for {
+      override def subscribeLogs(topic: Bytes32): F[SubscriptionResult[F, Log]] = for {
         addrOpt <- contractAddressR.get
         address <- assertNotNone[F, Address]("subscribe logs", addrOpt)
         result  <- cli.subscribeLogs(LogQuery.from(address, topic))

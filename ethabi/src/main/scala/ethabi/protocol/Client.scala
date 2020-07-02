@@ -7,18 +7,17 @@ import ethabi.util.Hash
 import ethabi.implicits._
 import ethabi.types.Address
 import Request._
-import ethabi.protocol.Response.TransactionReceipt
 
 trait Client[F[_]] {
 
   /**
-   * ========= INTERNAL API =========
+   * send request to ethereum jsonrpc server
    *
    * @param request  refer to [[Request]]
    * @tparam R       result type for this request
    * @return         a computation with effect type [[F]]
    */
-  protected def doRequest[R: Decoder](request: Request): F[Deferred[F, R]]
+  def doRequest[R: Decoder](request: Request): F[Deferred[F, R]]
 
   /**
    * @return ethereum client version, refer to https://eth.wiki/json-rpc/API#web3_clientversion
@@ -212,7 +211,8 @@ trait Client[F[_]] {
    * @param hash block hash
    * @return [[Response.Block]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByHash
    */
-  final def getBlockByHash(hash: Hash): F[Deferred[F, Response.Block]] = doRequest[Response.Block](Request.blockByHash(hash))
+  final def getBlockByHash(hash: Hash): F[Deferred[F, Option[Response.Block]]] =
+    doRequest[Option[Response.Block]](Request.blockByHash(hash))
 
   /**
    * return information about a block by hash
@@ -220,8 +220,8 @@ trait Client[F[_]] {
    * @param hash block hash
    * @return [[Response.BlockWithTransactions]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByHash
    */
-  final def getBlockByHashWithTransactions(hash: Hash): F[Deferred[F, Response.BlockWithTransactions]] =
-    doRequest[Response.BlockWithTransactions](Request.blockByHash(hash, detail = true))
+  final def getBlockByHashWithTransactions(hash: Hash): F[Deferred[F, Option[Response.BlockWithTransactions]]] =
+    doRequest[Option[Response.BlockWithTransactions]](Request.blockByHash(hash, detail = true))
 
   /**
    * return information about block by height
@@ -229,8 +229,8 @@ trait Client[F[_]] {
    * @param blockTag refer to [[BlockTag]]
    * @return [[Response.Block]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByNumber
    */
-  final def getBlockByNumber(blockTag: BlockTag = Latest): F[Deferred[F, Response.Block]] =
-    doRequest[Response.Block](Request.blockByNumber(blockTag))
+  final def getBlockByNumber(blockTag: BlockTag = Latest): F[Deferred[F, Option[Response.Block]]] =
+    doRequest[Option[Response.Block]](Request.blockByNumber(blockTag))
 
   /**
    * return information about block by height
@@ -238,7 +238,8 @@ trait Client[F[_]] {
    * @param height block height
    * @return [[Response.Block]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByNumber
    */
-  final def getBlockByNumber(height: Long): F[Deferred[F, Response.Block]] = getBlockByNumber(BlockNumber(height))
+  final def getBlockByNumber(height: Long): F[Deferred[F, Option[Response.Block]]] =
+    getBlockByNumber(BlockNumber(height))
 
   /**
    * return information about block by height
@@ -246,8 +247,8 @@ trait Client[F[_]] {
    * @param blockTag refer to [[BlockTag]]
    * @return [[Response.Block]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByNumber
    */
-  final def getBlockByNumberWithTransactions(blockTag: BlockTag = Latest): F[Deferred[F, Response.BlockWithTransactions]] =
-    doRequest[Response.BlockWithTransactions](Request.blockByNumber(blockTag, detail = true))
+  final def getBlockByNumberWithTransactions(blockTag: BlockTag = Latest): F[Deferred[F, Option[Response.BlockWithTransactions]]] =
+    doRequest[Option[Response.BlockWithTransactions]](Request.blockByNumber(blockTag, detail = true))
 
   /**
    * return information about block by height
@@ -255,8 +256,178 @@ trait Client[F[_]] {
    * @param height  block height
    * @return [[Response.BlockWithTransactions]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByNumber
    */
-  final def getBlockByNumberWithTransactions(height: Long): F[Deferred[F, Response.BlockWithTransactions]] =
+  final def getBlockByNumberWithTransactions(height: Long): F[Deferred[F, Option[Response.BlockWithTransactions]]] =
     getBlockByNumberWithTransactions(BlockNumber(height))
 
-  final def getTransactionReceipt(txHash: Hash): F[Deferred[F, Option[TransactionReceipt]]] = doRequest[Option[TransactionReceipt]](Request.transactionReceipt(txHash))
+  /**
+   * returns the information about a transaction requested by transaction hash
+   *
+   * @param hash transaction hash
+   * @return [[Response.Transaction]], refer to https://eth.wiki/json-rpc/API#eth_getTransactionByHash
+   */
+  final def getTransactionByHash(hash: Hash): F[Deferred[F, Option[Response.Transaction]]] =
+    doRequest(Request.transactionByHash(hash))
+
+  /**
+   * returns information about a transaction by block hash and transaction index position
+   *
+   * @param hash   block hash
+   * @param index  transaction index in block
+   * @return [[Response.Transaction]], refer to https://eth.wiki/json-rpc/API#eth_getTransactionBlockHashAndIndex
+   */
+  final def getTransactionByBlockHashAndIndex(hash: Hash, index: Int): F[Deferred[F, Option[Response.Transaction]]] =
+    doRequest(Request.transactionByBlockHashAndIndex(hash, index))
+
+  /**
+   * returns information about a transaction by block number and transaction index position
+   *
+   * @param blockTag refer to [[BlockTag]]
+   * @param index    transaction index in block
+   * @return [[Response.Transaction]], refer to https://eth.wiki/json-rpc/API#eth_getTransactionByBlockNumberAndIndex
+   */
+  final def getTransactionByBlockNumberAndIndex(blockTag: BlockTag, index: Int): F[Deferred[F, Option[Response.Transaction]]] =
+    doRequest(Request.transactionByBlockNumberAndIndex(blockTag, index))
+
+  /**
+   * returns information about a transaction by block number and transaction index position
+   *
+   * @param height block number
+   * @param index  transaction index in block
+   * @return [[Response.Transaction]], refer to https://eth.wiki/json-rpc/API#eth_getTransactionByBlockNumberAndIndex
+   */
+  final def getTransactionByBlockNumberAndIndex(height: Long, index: Int): F[Deferred[F, Option[Response.Transaction]]] =
+    doRequest(Request.transactionByBlockNumberAndIndex(BlockNumber(height), index))
+
+  /**
+   * returns the receipt of a transaction by transaction hash
+   *
+   * @param txHash transaction hash
+   * @return [[Response.TransactionReceipt]], refer to https://eth.wiki/json-rpc/API#eth_getTransactionReceipt
+   * @note   receipt is not available for pending transaction
+   */
+  final def getTransactionReceipt(txHash: Hash): F[Deferred[F, Option[Response.TransactionReceipt]]] =
+    doRequest[Option[Response.TransactionReceipt]](Request.transactionReceipt(txHash))
+
+  /**
+   * returns information about a uncle of a block by hash and uncle index position
+   *
+   * @param hash  block hash
+   * @param index uncle index in block
+   * @return [[Response.Header]], refer to https://eth.wiki/json-rpc/API#eth_getUncleByBlockHashAndIndex
+   */
+  final def getUncleByBlockHashAndIndex(hash: Hash, index: Int): F[Deferred[F, Option[Response.Header]]] =
+    doRequest[Option[Response.Header]](Request.uncleByBlockHashAndIndex(hash, index))
+
+  /**
+   * returns information about a uncle of a block by hash and uncle index position
+   *
+   * @param blockTag refer to [[BlockTag]]
+   * @param index    uncle index in block
+   * @return [[Response.Header]], refer to https://eth.wiki/json-rpc/API#eth_getUncleByBlockNumberAndIndex
+   */
+  final def getUncleByBlockNumberAndIndex(blockTag: BlockTag, index: Int): F[Deferred[F, Option[Response.Header]]] =
+    doRequest[Option[Response.Header]](Request.uncleByBlockNumberAndIndex(blockTag, index))
+
+  /**
+   * returns information about a uncle of a block by hash and uncle index position
+   *
+   * @param height block number
+   * @param index  uncle index in block
+   * @return [[Response.Header]], refer to https://eth.wiki/json-rpc/API#eth_getUncleByBlockNumberAndIndex
+   */
+  final def getUncleByBlockNumberAndIndex(height: Long, index: Int): F[Deferred[F, Option[Response.Header]]] =
+    getUncleByBlockNumberAndIndex(BlockNumber(height), index)
+
+  /**
+   * creates a filter object, based on filter options, to notify when the state changes
+   *
+   * @param filter refer to [[LogFilter]]
+   * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newFilter
+   */
+  final def newFilter(filter: LogFilter): F[Deferred[F, Long]] = doRequest[Long](Request.newFilter(filter))
+
+  /**
+   * creates a filter in the node, to notify when a new block arrives
+   *
+   * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newBlockFilter
+   */
+  final def newBlockFilter: F[Deferred[F, Long]] = doRequest[Long](Request.newBlockFilter())
+
+  /**
+   * creates a filter in the node, to notify when new pending transactions arrive
+   *
+   * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newPendingTransactionFilter
+   */
+  final def newPendingTransactionFilter: F[Deferred[F, Long]] = doRequest[Long](Request.newPendingTransactionFilter())
+
+  /**
+   * uninstalls a filter with given id
+   *
+   * @param filterId filter id which return by [[newFilter]], [[newBlockFilter]] and [[newPendingTransactionFilter]]
+   * @return true if succeed, false otherwise, refer to https://eth.wiki/json-rpc/API#eth_uninstallFilter
+   */
+  final def uninstallFilter(filterId: Long): F[Deferred[F, Boolean]] = doRequest[Boolean](Request.uninstallFilter(filterId))
+
+  /**
+   * refer to [[getFilterChanges]]
+   * @note `filterId` MUST be returned by [[newBlockFilter]] or [[newPendingTransactionFilter]]
+   */
+  final def getFilterChangeHashes(filterId: Long): F[Deferred[F, List[Hash]]] =
+    doRequest[List[Hash]](Request.filterChanges(filterId))
+
+  /**
+   * polling method for a filter, which returns an array of logs which occurred since last poll.
+   *
+   * @param filterId filter id which return by [[newFilter]], [[newBlockFilter]] and [[newPendingTransactionFilter]]
+   * @return [[Response.Log]], refer to https://eth.wiki/json-rpc/API#eth_getFilterChanges
+   */
+  final def getFilterChanges(filterId: Long): F[Deferred[F, List[Response.Log]]] =
+    doRequest[List[Response.Log]](Request.filterChanges(filterId))
+
+  /**
+   * refer to [[getFilterLogs]]
+   * @note `fliterId` MUST be returned by [[newBlockFilter]] or [[newPendingTransactionFilter]]
+   */
+  final def getFilterLogHashes(filterId: Long): F[Deferred[F, List[Hash]]] =
+    doRequest[List[Hash]](Request.filterLogs(filterId))
+
+  /**
+   * returns an array of all logs matching filter with given id
+   *
+   * @param filterId filter id which return by [[newFilter]], [[newBlockFilter]] and [[newPendingTransactionFilter]]
+   * @return [[Response.Log]], refer to https://eth.wiki/json-rpc/API#eth_getFilterLogs
+   */
+  final def getFilterLogs(filterId: Long): F[Deferred[F, List[Response.Log]]] =
+    doRequest[List[Response.Log]](Request.filterLogs(filterId))
+
+  /**
+   * returns an array of all logs matching a given filter object
+   *
+   * @param logQuery refer to [[LogQuery]]
+   * @return [[Response.Log]], refer to https://eth.wiki/json-rpc/API#eth_getLogs
+   */
+  final def getLogs(logQuery: LogQuery): F[Deferred[F, List[Response.Log]]] =
+    doRequest[List[Response.Log]](Request.logs(logQuery))
+
+  /**
+   * mining api, return [[Response.Work]], refer to https://eth.wiki/json-rpc/API#eth_getWork
+   */
+  final def getWork: F[Deferred[F, Response.Work]] = doRequest[Response.Work](Request.work)
+
+  /**
+   * used for submitting a proof-of-work solution
+   *
+   * @param work pow work result from miner
+   * @return true if succeed, false otherwise, refer to https://eth.wiki/json-rpc/API#eth_submitWork
+   */
+  final def submitWork(work: Work): F[Deferred[F, Boolean]] = doRequest[Boolean](Request.submitWork(work))
+
+  /**
+   * used for submitting mining hashrate
+   *
+   * @param hashrate miner hashrate
+   * @return true if succeed, false otherwise, refer to https://eth.wiki/json-rpc/API#eth_submitHashrate
+   */
+  final def submitHashrate(hashrate: Hashrate): F[Deferred[F, Boolean]] =
+    doRequest[Boolean](Request.submitHashrate(hashrate))
 }

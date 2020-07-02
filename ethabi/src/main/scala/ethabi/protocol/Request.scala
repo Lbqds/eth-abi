@@ -9,11 +9,12 @@ import ethabi.types.Address
 import ethabi.implicits._
 import scala.collection.mutable
 import java.util.concurrent.atomic.AtomicLong
+import ethabi.types.generated.Bytes32
 
 @JsonCodec(encodeOnly = true)
 final case class Request(jsonrpc: String, id: Id, params: Seq[Json], method: String) {
   def withId(id: Long): Request = copy(id = Id(id))
-  def toJson: String = Encoder[Request].apply(this).toString
+  def toJson: String = encode(this).toString
 }
 
 object Request {
@@ -60,17 +61,17 @@ object Request {
   }
 
   final case class Transaction(from: Address, to: Option[Address], data: Array[Byte], opt: TransactionOpt) {
-    def toJson: Json = Encoder[Transaction].apply(this)
+    def toJson: Json = encode(this)
     override def toString: String = toJson.spaces2
   }
 
   object Transaction {
     implicit val encoder: Encoder[Transaction] = (tx: Transaction) => {
-      val opts = Encoder[TransactionOpt].apply(tx.opt).asObject.get.toMap
+      val opts = encode(tx.opt).asObject.get.toMap
       val json = mutable.Map.empty[String, Json]
-      json("from") = Encoder[Address].apply(tx.from)
-      if (tx.to.isDefined) json("to") = Encoder[Address].apply(tx.to.get)
-      if (tx.data.nonEmpty) json("data") = Encoder[Array[Byte]].apply(tx.data)
+      json("from") = encode(tx.from)
+      if (tx.to.isDefined) json("to") = encode(tx.to.get)
+      if (tx.data.nonEmpty) json("data") = encode(tx.data)
       (json ++ opts).asJson
     }
 
@@ -79,25 +80,38 @@ object Request {
     }
   }
 
+  /**
+   * [] “anything”                                                                                           => List[Bytes32]
+   * [A] “A in first position (and anything after)”                                                          => List[Bytes32]
+   * [null, B] “anything in first position AND B in second position (and anything after)”                    => `List[Option[Bytes32]]`
+   * [A, B] “A in first position AND B in second position (and anything after)”                              => List[Bytes32]
+   * `[[A, B], [A, B]]` “(A OR B) in first position AND (A OR B) in second position (and anything after)”    => `List[List[Bytes32]]`
+   *
+   * therefore, the type of [[topics]] is `List[Either[Option[Bytes32], List[Bytes32]]]`
+   */
   @JsonCodec(encodeOnly = true)
-  final case class LogFilter(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: List[Address], topics: Option[List[List[Hash]]]) {
-    def toJson: Json = Encoder[LogFilter].apply(this)
+  final case class LogFilter(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: List[Address], topics: List[Either[Option[Bytes32], List[Bytes32]]]) {
+    def toJson: Json = encode(this)
     override def toString: String = toJson.spaces2
   }
 
   @JsonCodec(encodeOnly = true)
-  final case class LogQuery(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: List[Address], topics: Option[List[List[Hash]]], blockHash: Option[Hash]) {
-    def toJson: Json = Encoder[LogQuery].apply(this)
+  final case class LogQuery(fromBlock: Option[BlockTag], toBlock: Option[BlockTag], addresses: List[Address], topics: List[Either[Option[Bytes32], List[Bytes32]]], blockHash: Option[Hash]) {
+    def toJson: Json = encode(this)
     override def toString: String = toJson.spaces2
   }
 
   object LogQuery {
-    def from(address: Address, topic: Hash): LogQuery =
-      LogQuery(None, None, List(address), Some(List(List(topic))), None)
+    def from(address: Address, topic: Bytes32): LogQuery =
+      LogQuery(None, None, List(address), List(Left(Some(topic))), None)
   }
 
+  final case class Work(nonce: Long, hash: Hash, mixHash: Hash)
+
+  final case class Hashrate(rate: Bytes32, id: Bytes32)
+
   def sha3(data: Array[Byte]): Request =
-    Request(method = "web3_sha3", params = Seq(Json.fromString(Hex.bytes2Hex(data, withPrefix = true))))
+    Request(method = "web3_sha3", params = Seq(encode(data)))
 
   def clientVersion(): Request = Request(method = "web3_clientVersion")
   def netVersion(): Request = Request(method = "net_version")
@@ -113,44 +127,43 @@ object Request {
   def blockNumber(): Request = Request(method = "eth_blockNumber")
 
   def balance(address: Address, blockTag: BlockTag): Request =
-    Request(method = "eth_getBalance", params = Seq(address.toString, blockTag.toString).map(Json.fromString))
+    Request(method = "eth_getBalance", params = Seq(encode(address), encode(blockTag)))
 
-  def storageAt(address: Address, position: Int, blockTag: BlockTag): Request = {
-    val positionHex = Hex.int2Hex(position, withPrefix = true)
-    Request(method = "eth_getStorageAt", params = Seq(address.toString, positionHex, blockTag.toString).map(Json.fromString))
-  }
+  def storageAt(address: Address, position: Int, blockTag: BlockTag): Request =
+    Request(
+      method = "eth_getStorageAt",
+      params = Seq(encode(address), encode(position), encode(blockTag))
+    )
 
   def transactionCount(address: Address, blockTag: BlockTag): Request =
-    Request(method = "eth_getTransactionCount", params = Seq(address.toString, blockTag.toString).map(Json.fromString))
+    Request(method = "eth_getTransactionCount", params = Seq(encode(address), encode(blockTag)))
 
   def blockTransactionCountByHash(hash: Hash): Request =
-    Request(method = "eth_getBlockTransactionCountByHash", params = Seq(Json.fromString(hash.toString)))
+    Request(method = "eth_getBlockTransactionCountByHash", params = Seq(encode(hash)))
 
   def blockTransactionCountByNumber(blockTag: BlockTag = Latest): Request =
-    Request(method = "eth_getBlockTransactionCountByNumber", params = Seq(Json.fromString(blockTag.toString)))
+    Request(method = "eth_getBlockTransactionCountByNumber", params = Seq(encode(blockTag)))
 
   def blockTransactionCountByNumber(height: Long): Request =
     blockTransactionCountByNumber(BlockNumber(height))
 
   def uncleCountByHash(hash: Hash): Request =
-    Request(method = "eth_getUncleCountByBlockHash", params = Seq(Json.fromString(hash.toString)))
+    Request(method = "eth_getUncleCountByBlockHash", params = Seq(encode(hash)))
 
   def uncleCountByNumber(blockTag: BlockTag = Latest): Request =
-    Request(method = "eth_getUncleCountByBlockNumber", params = Seq(Json.fromString(blockTag.toString)))
+    Request(method = "eth_getUncleCountByBlockNumber", params = Seq(encode(blockTag)))
 
   def uncleCountByNumber(height: Long): Request =
     uncleCountByNumber(BlockNumber(height))
 
   def code(address: Address, blockTag: BlockTag = Latest): Request =
-    Request(method = "eth_getCode", params = Seq(address.toString, blockTag.toString).map(Json.fromString))
+    Request(method = "eth_getCode", params = Seq(encode(address), encode(blockTag)))
 
   def code(address: Address, height: Long): Request =
     code(address, BlockNumber(height))
 
-  def sign(address: Address, data: Array[Byte]): Request = {
-    val dataHex = Hex.bytes2Hex(data, withPrefix = true)
-    Request(method = "eth_sign", params = Seq(address.toString, dataHex).map(Json.fromString))
-  }
+  def sign(address: Address, data: Array[Byte]): Request =
+    Request(method = "eth_sign", params = Seq(encode(address), encode(data)))
 
   def signTransaction(tx: Transaction): Request =
     Request(method = "eth_signTransaction", params = Seq(tx.toJson))
@@ -158,77 +171,78 @@ object Request {
   def sendTransaction(transaction: Transaction): Request =
     Request(method = "eth_sendTransaction", params = Seq(transaction.toJson))
 
-  def sendRawTransaction(rawTx: Array[Byte]): Request = {
-    val txHex = Hex.bytes2Hex(rawTx, withPrefix = true)
-    Request(method = "eth_sendRawTransaction", params = Seq(Json.fromString(txHex)))
-  }
+  def sendRawTransaction(rawTx: Array[Byte]): Request =
+    Request(method = "eth_sendRawTransaction", params = Seq(encode(rawTx)))
 
   def call(callData: Transaction, blockTag: BlockTag): Request =
-    Request(method = "eth_call", params = Seq(callData.toJson, Json.fromString(blockTag.toString)))
+    Request(method = "eth_call", params = Seq(callData.toJson, encode(blockTag)))
 
   def estimateGas(callData: Transaction, blockTag: BlockTag = Latest): Request =
-    Request(method = "eth_estimateGas", params = Seq(callData.toJson, Json.fromString(blockTag.toString)))
+    Request(method = "eth_estimateGas", params = Seq(callData.toJson, encode(blockTag)))
 
   def estimateGas(callData: Transaction, height: Long): Request = estimateGas(callData, BlockNumber(height))
 
   def blockByHash(hash: Hash, detail: Boolean = false): Request =
-    Request(method = "eth_getBlockByHash", params = Seq(Json.fromString(hash.toString), Json.fromBoolean(detail)))
+    Request(method = "eth_getBlockByHash", params = Seq(encode(hash), encode(detail)))
 
   def blockByNumber(blockTag: BlockTag = Latest, detail: Boolean = false): Request =
-    Request(method = "eth_getBlockByNumber", params = Seq(Json.fromString(blockTag.toString), Json.fromBoolean(detail)))
+    Request(method = "eth_getBlockByNumber", params = Seq(encode(blockTag), encode(detail)))
 
-  def transactionByHash(hash: String): Request = Request(method = "eth_getTransactionByHash", params = Seq(Json.fromString(hash)))
-  def transactionByHash(hash: Hash): Request = transactionByHash(hash.toString)
+  def transactionByHash(hash: Hash): Request = Request(method = "eth_getTransactionByHash", params = Seq(encode(hash)))
 
-  def transactionByBlockHashAndIndex(hash: String, index: Int): Request = {
-    val indexHex = Hex.int2Hex(index, withPrefix = true)
-    Request(method = "eth_getTransactionByBlockHashAndIndex", params = Seq(hash, indexHex).map(Json.fromString))
-  }
+  def transactionByBlockHashAndIndex(hash: Hash, index: Int): Request =
+    Request(
+      method = "eth_getTransactionByBlockHashAndIndex",
+      params = Seq(encode(hash), encode(index))
+    )
 
-  def transactionByBlockHashAndIndex(hash: Hash, index: Int): Request = transactionByBlockHashAndIndex(hash.toString, index)
-  def transactionByBlockNumberAndIndex(blockTag: BlockTag = Latest, index: Int): Request = {
-    val indexHex = Hex.int2Hex(index, withPrefix = true)
-    Request(method = "eth_getTransactionByBlockNumberAndIndex", params = Seq(blockTag.toString, indexHex).map(Json.fromString))
-  }
+  def transactionByBlockNumberAndIndex(blockTag: BlockTag = Latest, index: Int): Request =
+    Request(
+      method = "eth_getTransactionByBlockNumberAndIndex",
+      params = Seq(encode(blockTag), encode(index))
+    )
 
-  def transactionByBlockNumberAndIndex(height: Long, index: Int): Request = transactionByBlockNumberAndIndex(BlockNumber(height), index)
-  def transactionReceipt(hash: String): Request = Request(method = "eth_getTransactionReceipt", params = Seq(Json.fromString(hash)))
-  def transactionReceipt(hash: Hash): Request = transactionReceipt(hash.toString)
+  def transactionReceipt(hash: Hash): Request = Request(method = "eth_getTransactionReceipt", params = Seq(encode(hash)))
 
-  def uncleByBlockHashAndIndex(hash: String, index: Int): Request = {
-    val indexHex = Hex.int2Hex(index, withPrefix = true)
-    Request(method = "eth_getUncleByBlockHashAndIndex", params = Seq(hash, indexHex).map(Json.fromString))
-  }
+  def uncleByBlockHashAndIndex(hash: Hash, index: Int): Request =
+    Request(
+      method = "eth_getUncleByBlockHashAndIndex",
+      params = Seq(encode(hash), encode(index))
+    )
 
-  def uncleByBlockHashAndIndex(hash: Hash, index: Int): Request = uncleByBlockHashAndIndex(hash.toString, index)
-  def uncleByBlockNumberAndIndex(blockTag: BlockTag = Latest, index: Int): Request = {
-    val indexHex = Hex.int2Hex(index, withPrefix = true)
-    Request(method = "eth_getUncleByBlockNumberAndIndex", params = Seq(blockTag.toString, indexHex).map(Json.fromString))
-  }
-
-  def uncleByBlockNumberAndIndex(height: Long, index: Int): Request =
-    uncleByBlockNumberAndIndex(BlockNumber(height), index)
+  def uncleByBlockNumberAndIndex(blockTag: BlockTag = Latest, index: Int): Request =
+    Request(
+      method = "eth_getUncleByBlockNumberAndIndex",
+      params = Seq(encode(blockTag), encode(index))
+    )
 
   def newFilter(logFilter: LogFilter): Request = Request(method = "eth_newFilter", params = Seq(logFilter.toJson))
   def newBlockFilter(): Request = Request(method = "eth_newBlockFilter")
   def newPendingTransactionFilter(): Request = Request(method = "eth_newPendingTransactionFilter")
-  def uninstallFilter(filterId: Int): Request = {
-    val filterIdHex = Hex.int2Hex(filterId, withPrefix = true)
-    Request(method = "eth_uninstallFilter", params = Seq(Json.fromString(filterIdHex)))
-  }
+  def uninstallFilter(filterId: Long): Request =
+    Request(method = "eth_uninstallFilter", params = Seq(encode(filterId)))
 
-  def filterChanges(filterId: Int): Request = {
-    val filterIdHex = Hex.int2Hex(filterId, withPrefix = true)
-    Request(method = "eth_getFilterChanges", params = Seq(Json.fromString(filterIdHex)))
-  }
+  def filterChanges(filterId: Long): Request =
+    Request(method = "eth_getFilterChanges", params = Seq(encode(filterId)))
 
-  def filterLogs(filterId: Int): Request = {
-    val filterIdHex = Hex.int2Hex(filterId, withPrefix = true)
-    Request(method = "eth_getFilterLogs", params = Seq(Json.fromString(filterIdHex)))
-  }
+  def filterLogs(filterId: Long): Request =
+    Request(method = "eth_getFilterLogs", params = Seq(encode(filterId)))
 
   def logs(logQuery: LogQuery): Request = Request(method = "eth_getLogs", params = Seq(logQuery.toJson))
-  // TODO: more rpc api
+
+  def work: Request = Request(method = "eth_getWork")
+
+  def submitWork(work: Work): Request =
+    Request(
+      method = "eth_submitWork",
+      params = Seq(encode(work.nonce), encode(work.hash), encode(work.mixHash))
+    )
+
+  def submitHashrate(hashrate: Hashrate): Request =
+    Request(
+      method = "eth_submitHashrate",
+      params = Seq(encode(hashrate.rate), encode(hashrate.id))
+    )
 
   def subscribeNewHeader(): Request =
     Request(method = "eth_subscribe", params = Seq(Json.fromString("newHeads")))

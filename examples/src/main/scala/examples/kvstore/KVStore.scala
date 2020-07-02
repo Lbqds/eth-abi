@@ -55,7 +55,7 @@ final class KVStore[F[_]: ConcurrentEffect: Timer] private (private val impl: Co
     Event.decode(typeInfos, log)
   }
   def subscribeRecord: F[SubscriptionResult[F, Event]] = {
-    for (result <- impl.subscribeLogs(Hash("0x5f9f5e049bc49bc3d2067c5c5077871baab0b4e104a1554c8ac68f7c9fd81884"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeRecord))
+    for (result <- impl.subscribeLogs(Bytes32.from("0x5f9f5e049bc49bc3d2067c5c5077871baab0b4e104a1554c8ac68f7c9fd81884"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeRecord))
   }
 }
 object KVStore {

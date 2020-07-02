@@ -281,7 +281,7 @@ final class Exchange[F[_]: ConcurrentEffect: Timer] private (private val impl: C
     Event.decode(typeInfos, log)
   }
   def subscribeSignatureValidatorApproval: F[SubscriptionResult[F, Event]] = {
-    for (result <- impl.subscribeLogs(Hash("0xa8656e308026eeabce8f0bc18048433252318ab80ac79da0b3d3d8697dfba891"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeSignatureValidatorApproval))
+    for (result <- impl.subscribeLogs(Bytes32.from("0xa8656e308026eeabce8f0bc18048433252318ab80ac79da0b3d3d8697dfba891"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeSignatureValidatorApproval))
   }
   private def decodeFill(log: Log): Event = {
     val typeInfo28 = TypeInfo[Address]
@@ -292,7 +292,7 @@ final class Exchange[F[_]: ConcurrentEffect: Timer] private (private val impl: C
     Event.decode(typeInfos, log)
   }
   def subscribeFill: F[SubscriptionResult[F, Event]] = {
-    for (result <- impl.subscribeLogs(Hash("0x0bcc4c97732e47d9946f229edb95f5b6323f601300e4690de719993f3c371129"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeFill))
+    for (result <- impl.subscribeLogs(Bytes32.from("0x0bcc4c97732e47d9946f229edb95f5b6323f601300e4690de719993f3c371129"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeFill))
   }
   private def decodeCancel(log: Log): Event = {
     val typeInfo32 = TypeInfo[Address]
@@ -303,7 +303,7 @@ final class Exchange[F[_]: ConcurrentEffect: Timer] private (private val impl: C
     Event.decode(typeInfos, log)
   }
   def subscribeCancel: F[SubscriptionResult[F, Event]] = {
-    for (result <- impl.subscribeLogs(Hash("0xdc47b3613d9fe400085f6dbdc99453462279057e6207385042827ed6b1a62cf7"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeCancel))
+    for (result <- impl.subscribeLogs(Bytes32.from("0xdc47b3613d9fe400085f6dbdc99453462279057e6207385042827ed6b1a62cf7"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeCancel))
   }
   private def decodeCancelUpTo(log: Log): Event = {
     val typeInfo36 = TypeInfo[Address]
@@ -313,7 +313,7 @@ final class Exchange[F[_]: ConcurrentEffect: Timer] private (private val impl: C
     Event.decode(typeInfos, log)
   }
   def subscribeCancelUpTo: F[SubscriptionResult[F, Event]] = {
-    for (result <- impl.subscribeLogs(Hash("0x82af639571738f4ebd4268fb0363d8957ebe1bbb9e78dba5ebd69eed39b154f0"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeCancelUpTo))
+    for (result <- impl.subscribeLogs(Bytes32.from("0x82af639571738f4ebd4268fb0363d8957ebe1bbb9e78dba5ebd69eed39b154f0"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeCancelUpTo))
   }
   private def decodeAssetProxyRegistered(log: Log): Event = {
     val typeInfo39 = TypeInfo[TupleType2[Bytes4, Address]]
@@ -321,7 +321,7 @@ final class Exchange[F[_]: ConcurrentEffect: Timer] private (private val impl: C
     Event.decode(typeInfos, log)
   }
   def subscribeAssetProxyRegistered: F[SubscriptionResult[F, Event]] = {
-    for (result <- impl.subscribeLogs(Hash("0xd2c6b762299c609bdb96520b58a49bfb80186934d4f71a86a367571a15c03194"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeAssetProxyRegistered))
+    for (result <- impl.subscribeLogs(Bytes32.from("0xd2c6b762299c609bdb96520b58a49bfb80186934d4f71a86a367571a15c03194"))) yield SubscriptionResult[F, Event](result.id, result.stream.map(decodeAssetProxyRegistered))
   }
 }
 object Exchange {
