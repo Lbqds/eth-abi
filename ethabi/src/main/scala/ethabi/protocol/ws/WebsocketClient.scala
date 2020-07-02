@@ -92,7 +92,7 @@ object WebsocketClient {
           id      <- nextId
           promise <- Deferred[F, R]
           _       <- conn.send(fromRequest(request.withId(id)))
-          _       <- requestMap.update(_.updated(request.id.value, _.convertTo[R, F].flatMap(promise.complete)))
+          _       <- requestMap.update(_.updated(id, _.convertTo[R, F].flatMap(promise.complete)))
         } yield promise
       }
 

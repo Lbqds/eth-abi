@@ -216,13 +216,13 @@ object Request {
   def newFilter(logFilter: LogFilter): Request = Request(method = "eth_newFilter", params = Seq(logFilter.toJson))
   def newBlockFilter(): Request = Request(method = "eth_newBlockFilter")
   def newPendingTransactionFilter(): Request = Request(method = "eth_newPendingTransactionFilter")
-  def uninstallFilter(filterId: Long): Request =
+  def uninstallFilter(filterId: Response.FilterId): Request =
     Request(method = "eth_uninstallFilter", params = Seq(encode(filterId)))
 
-  def filterChanges(filterId: Long): Request =
+  def filterChanges(filterId: Response.FilterId): Request =
     Request(method = "eth_getFilterChanges", params = Seq(encode(filterId)))
 
-  def filterLogs(filterId: Long): Request =
+  def filterLogs(filterId: Response.FilterId): Request =
     Request(method = "eth_getFilterLogs", params = Seq(encode(filterId)))
 
   def logs(logQuery: LogQuery): Request = Request(method = "eth_getLogs", params = Seq(logQuery.toJson))

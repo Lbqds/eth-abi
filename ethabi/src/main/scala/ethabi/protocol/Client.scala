@@ -344,21 +344,21 @@ trait Client[F[_]] {
    * @param filter refer to [[LogFilter]]
    * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newFilter
    */
-  final def newFilter(filter: LogFilter): F[Deferred[F, Long]] = doRequest[Long](Request.newFilter(filter))
+  final def newFilter(filter: LogFilter): F[Deferred[F, Response.FilterId]] = doRequest[Response.FilterId](Request.newFilter(filter))
 
   /**
    * creates a filter in the node, to notify when a new block arrives
    *
    * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newBlockFilter
    */
-  final def newBlockFilter: F[Deferred[F, Long]] = doRequest[Long](Request.newBlockFilter())
+  final def newBlockFilter: F[Deferred[F, Response.FilterId]] = doRequest[Response.FilterId](Request.newBlockFilter())
 
   /**
    * creates a filter in the node, to notify when new pending transactions arrive
    *
    * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newPendingTransactionFilter
    */
-  final def newPendingTransactionFilter: F[Deferred[F, Long]] = doRequest[Long](Request.newPendingTransactionFilter())
+  final def newPendingTransactionFilter: F[Deferred[F, Response.FilterId]] = doRequest[Response.FilterId](Request.newPendingTransactionFilter())
 
   /**
    * uninstalls a filter with given id
@@ -366,13 +366,13 @@ trait Client[F[_]] {
    * @param filterId filter id which return by [[newFilter]], [[newBlockFilter]] and [[newPendingTransactionFilter]]
    * @return true if succeed, false otherwise, refer to https://eth.wiki/json-rpc/API#eth_uninstallFilter
    */
-  final def uninstallFilter(filterId: Long): F[Deferred[F, Boolean]] = doRequest[Boolean](Request.uninstallFilter(filterId))
+  final def uninstallFilter(filterId: Response.FilterId): F[Deferred[F, Boolean]] = doRequest[Boolean](Request.uninstallFilter(filterId))
 
   /**
    * refer to [[getFilterChanges]]
    * @note `filterId` MUST be returned by [[newBlockFilter]] or [[newPendingTransactionFilter]]
    */
-  final def getFilterChangeHashes(filterId: Long): F[Deferred[F, List[Hash]]] =
+  final def getFilterChangeHashes(filterId: Response.FilterId): F[Deferred[F, List[Hash]]] =
     doRequest[List[Hash]](Request.filterChanges(filterId))
 
   /**
@@ -381,14 +381,14 @@ trait Client[F[_]] {
    * @param filterId filter id which return by [[newFilter]], [[newBlockFilter]] and [[newPendingTransactionFilter]]
    * @return [[Response.Log]], refer to https://eth.wiki/json-rpc/API#eth_getFilterChanges
    */
-  final def getFilterChanges(filterId: Long): F[Deferred[F, List[Response.Log]]] =
+  final def getFilterChanges(filterId: Response.FilterId): F[Deferred[F, List[Response.Log]]] =
     doRequest[List[Response.Log]](Request.filterChanges(filterId))
 
   /**
    * refer to [[getFilterLogs]]
    * @note `fliterId` MUST be returned by [[newBlockFilter]] or [[newPendingTransactionFilter]]
    */
-  final def getFilterLogHashes(filterId: Long): F[Deferred[F, List[Hash]]] =
+  final def getFilterLogHashes(filterId: Response.FilterId): F[Deferred[F, List[Hash]]] =
     doRequest[List[Hash]](Request.filterLogs(filterId))
 
   /**
@@ -397,7 +397,7 @@ trait Client[F[_]] {
    * @param filterId filter id which return by [[newFilter]], [[newBlockFilter]] and [[newPendingTransactionFilter]]
    * @return [[Response.Log]], refer to https://eth.wiki/json-rpc/API#eth_getFilterLogs
    */
-  final def getFilterLogs(filterId: Long): F[Deferred[F, List[Response.Log]]] =
+  final def getFilterLogs(filterId: Response.FilterId): F[Deferred[F, List[Response.Log]]] =
     doRequest[List[Response.Log]](Request.filterLogs(filterId))
 
   /**

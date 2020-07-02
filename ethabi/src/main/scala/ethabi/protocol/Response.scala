@@ -23,6 +23,8 @@ final case class Response(jsonrpc: String, id: Id, result: Json, error: Option[R
 }
 
 object Response {
+  type FilterId = BigInt
+
   @JsonCodec(decodeOnly = true)
   final case class ResponseError(code: Id, message: String, data: Option[Json])
 
