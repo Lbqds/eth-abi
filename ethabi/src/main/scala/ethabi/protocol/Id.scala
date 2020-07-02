@@ -13,6 +13,8 @@ final case class Id(value: Long) extends AnyVal
 
 object Id {
 
+  val zero: Id = Id(0)
+
   implicit val idDecoder: Decoder[Id] = (c: HCursor) => {
     c.value.asNumber match {
       case None => Left(DecodingFailure("decode to id failed", Nil))

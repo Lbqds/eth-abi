@@ -4,7 +4,7 @@ package http
 
 import cats._
 import cats.effect._
-import cats.effect.concurrent.Deferred
+import cats.effect.concurrent._
 import cats.implicits._
 import io.circe.Decoder
 import org.http4s.client.jdkhttpclient.JdkHttpClient
@@ -22,24 +22,28 @@ abstract class HttpClient[F[_]] extends Client[F]
 object HttpClient {
   def apply[F[_]: ConcurrentEffect](endpoint: String)(implicit CS: ContextShift[F]): Resource[F, HttpClient[F]] = {
     val httpClient = for {
-      client <- JdkHttpClient.simple[F]
+      requestId <- Ref.of[F, Long](0)
+      client    <- JdkHttpClient.simple[F]
     } yield new HttpClient[F] {
 
       override def doRequest[R: Decoder](request: Request): F[Deferred[F, R]] = {
         implicit val responseDecoder: EntityDecoder[F, Response] = circe.jsonOf[F, Response]
         implicit val requestEncoder: EntityEncoder[F, Request] = circe.jsonEncoderOf[F, Request]
 
-        val requestF: F[HttpRequest[F]] = Uri.fromString(endpoint).fold(
+        def nextId: F[Long] = requestId.getAndUpdate(_ + 1)
+
+        val requestF: Long => F[HttpRequest[F]] = id => Uri.fromString(endpoint).fold(
           ApplicativeError[F, Throwable].raiseError,
           uri => Applicative[F].pure(HttpRequest[F](
             method = Method.POST,
             headers = Headers.of(Header("Content-Type", "application/json")),
             uri = uri,
-          ).withEntity(request))
+          ).withEntity(request.withId(id)))
         )
 
         for {
-          request  <- requestF
+          id       <- nextId
+          request  <- requestF(id)
           response <- client.expect[Response](request)
           result   <- response.convertTo[R, F]
           promise  <- Deferred[F, R]

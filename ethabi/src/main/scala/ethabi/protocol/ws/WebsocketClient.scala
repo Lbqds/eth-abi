@@ -77,6 +77,7 @@ object WebsocketClient {
     }
 
     val newWsClient: WSConnectionHighLevel[F] => F[WebsocketClient[F]] = conn => for {
+      requestId       <- Ref.of[F, Long](0)
       requestMap      <- Ref[F].of(Map.empty[Long, CompletedCallback])
       subscriptionMap <- Ref[F].of(Map.empty[SubscriptionId, Topic[F, Subscription.Notification]])
       fiber           <- dispatch(conn, requestMap, subscriptionMap).repeat.compile.drain.start
@@ -85,9 +86,12 @@ object WebsocketClient {
       override def terminate: F[Unit] = fiber.cancel
 
       override def doRequest[R: Decoder](request: Request): F[Deferred[F, R]] = {
+        def nextId: F[Long] = requestId.getAndUpdate(_ + 1)
+
         for {
+          id      <- nextId
           promise <- Deferred[F, R]
-          _       <- conn.send(fromRequest(request))
+          _       <- conn.send(fromRequest(request.withId(id)))
           _       <- requestMap.update(_.updated(request.id.value, _.convertTo[R, F].flatMap(promise.complete)))
         } yield promise
       }

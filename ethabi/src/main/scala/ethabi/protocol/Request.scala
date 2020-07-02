@@ -8,7 +8,6 @@ import ethabi.util._
 import ethabi.types.Address
 import ethabi.implicits._
 import scala.collection.mutable
-import java.util.concurrent.atomic.AtomicLong
 import ethabi.types.generated.Bytes32
 
 @JsonCodec(encodeOnly = true)
@@ -20,11 +19,9 @@ final case class Request(jsonrpc: String, id: Id, params: Seq[Json], method: Str
 object Request {
 
   private val jsonrpcVersion = "2.0"
-  // TODO: request id per connection, use `copy`
-  private val nextId: AtomicLong = new AtomicLong(1)
 
   def apply(method: String, params: Seq[Json] = Seq.empty[Json]): Request = {
-    Request(jsonrpcVersion, Id(nextId.getAndIncrement()), params, method)
+    Request(jsonrpcVersion, Id.zero, params, method)
   }
 
   // call args for eth_sendTransaction & eth_call
