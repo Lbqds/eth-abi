@@ -15,7 +15,7 @@ trait Client[F[_]] {
    *
    * @param request  refer to [[Request]]
    * @tparam R       result type for this request
-   * @return         a computation with effect type [[F]]
+   * @return         a computation with effect type F
    */
   def doRequest[R: Decoder](request: Request): F[Deferred[F, R]]
 
@@ -85,7 +85,7 @@ trait Client[F[_]] {
 
   /**
    * @param address   account address
-   * @param blockTag  refer to [[BlockTag]]
+   * @param blockTag  refer to [[Request.BlockTag]]
    * @return  account balance in wei, refer to https://eth.wiki/json-rpc/API#eth_getBalance
    */
   final def getBalance(address: Address, blockTag: BlockTag = Latest): F[Deferred[F, BigInt]] = doRequest[BigInt](Request.balance(address, blockTag))
@@ -95,8 +95,8 @@ trait Client[F[_]] {
   /**
    * @param address   address of the storage e.g. contract address
    * @param position  index of the position in the storage
-   * @param blockTag  refer to [[BlockTag]]
-   * @return data in the storage position, refer to https://eth.wiki/json-rpc/API#eth_getStorageAt
+   * @param blockTag  refer to [[Request.BlockTag]]
+   * @return data in the storage position, refer to [[https://eth.wiki/json-rpc/API#eth_getStorageAt]]
    */
   final def getStorageAt(address: Address, position: Int, blockTag: BlockTag = Latest): F[Deferred[F, Array[Byte]]] =
     doRequest[Array[Byte]](Request.storageAt(address, position, blockTag))
@@ -106,7 +106,7 @@ trait Client[F[_]] {
 
   /**
    * @param address  account address
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return number of transaction send by `address`, refer to https://eth.wiki/json-rpc/API#eth_getTransactionCount
    */
   final def getTransactionCount(address: Address, blockTag: BlockTag = Latest): F[Deferred[F, Int]] =
@@ -121,7 +121,7 @@ trait Client[F[_]] {
   final def getBlockTransactionCountByHash(hash: Hash): F[Deferred[F, Int]] = doRequest[Int](Request.blockTransactionCountByHash(hash))
 
   /**
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return number of transactions in this block, refer to https://eth.wiki/json-rpc/API#eth_getBlockTransactionCountsByNumber
    */
   final def getBlockTransactionCountByNumber(blockTag: BlockTag = Latest): F[Deferred[F, Int]] = doRequest[Int](Request.blockTransactionCountByNumber(blockTag))
@@ -135,7 +135,7 @@ trait Client[F[_]] {
   final def getUncleCountByBlockHash(hash: Hash): F[Deferred[F, Int]] = doRequest[Int](Request.uncleCountByHash(hash))
 
   /**
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return number of uncles in this block, refer to https://eth.wiki/json-rpc/API#eth_getUncleCountByBlockNumber
    */
   final def getUncleCountByBlockNumber(blockTag: BlockTag = Latest): F[Deferred[F, Int]] = doRequest[Int](Request.uncleCountByNumber(blockTag))
@@ -144,7 +144,7 @@ trait Client[F[_]] {
 
   /**
    * @param address  contract address
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return contract code, refer to https://eth.wiki/json-rpc/API#eth_getCode
    */
   final def getCode(address: Address, blockTag: BlockTag = Latest): F[Deferred[F, Array[Byte]]] = doRequest[Array[Byte]](Request.code(address, blockTag))
@@ -186,8 +186,8 @@ trait Client[F[_]] {
   /**
    * execute contract method without create a transaction, therefore won't change world state
    *
-   * @param callData same as [[Transaction]] except for [[Transaction.opt.nonce]]
-   * @param blockTag refer to [[BlockTag]]
+   * @param callData same as [[Request.Transaction]] except for nonce
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return result of executed contract, https://eth.wiki/json-rpc/API#eth_call
    */
   final def call(callData: Transaction, blockTag: BlockTag = Latest): F[Deferred[F, Array[Byte]]] = doRequest[Array[Byte]](Request.call(callData, blockTag))
@@ -197,8 +197,8 @@ trait Client[F[_]] {
   /**
    * returns an estimate of how much gas is necessary to allow the transaction to complete
    *
-   * @param callData same with [[call]]
-   * @param blockTag refer to [[BlockTag]]
+   * @param callData same with Client.call
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return the estimate amount of gas, refer to https://eth.wiki/json-rpc/API#eth_estimateGas
    */
   final def estimateGas(callData: Transaction, blockTag: BlockTag = Latest): F[Deferred[F, Long]] = doRequest[Long](Request.estimateGas(callData, blockTag))
@@ -226,7 +226,7 @@ trait Client[F[_]] {
   /**
    * return information about block by height
    *
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return [[Response.Block]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByNumber
    */
   final def getBlockByNumber(blockTag: BlockTag = Latest): F[Deferred[F, Option[Response.Block]]] =
@@ -244,7 +244,7 @@ trait Client[F[_]] {
   /**
    * return information about block by height
    *
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @return [[Response.Block]], refer to https://eth.wiki/json-rpc/API#eth_getBlockByNumber
    */
   final def getBlockByNumberWithTransactions(blockTag: BlockTag = Latest): F[Deferred[F, Option[Response.BlockWithTransactions]]] =
@@ -281,7 +281,7 @@ trait Client[F[_]] {
   /**
    * returns information about a transaction by block number and transaction index position
    *
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @param index    transaction index in block
    * @return [[Response.Transaction]], refer to https://eth.wiki/json-rpc/API#eth_getTransactionByBlockNumberAndIndex
    */
@@ -321,7 +321,7 @@ trait Client[F[_]] {
   /**
    * returns information about a uncle of a block by hash and uncle index position
    *
-   * @param blockTag refer to [[BlockTag]]
+   * @param blockTag refer to [[Request.BlockTag]]
    * @param index    uncle index in block
    * @return [[Response.Header]], refer to https://eth.wiki/json-rpc/API#eth_getUncleByBlockNumberAndIndex
    */
@@ -341,7 +341,7 @@ trait Client[F[_]] {
   /**
    * creates a filter object, based on filter options, to notify when the state changes
    *
-   * @param filter refer to [[LogFilter]]
+   * @param filter refer to [[Request.LogFilter]]
    * @return filter id, which can be used with eth_getFilterChanges, refer to https://eth.wiki/json-rpc/API#eth_newFilter
    */
   final def newFilter(filter: LogFilter): F[Deferred[F, Response.FilterId]] = doRequest[Response.FilterId](Request.newFilter(filter))
@@ -403,7 +403,7 @@ trait Client[F[_]] {
   /**
    * returns an array of all logs matching a given filter object
    *
-   * @param logQuery refer to [[LogQuery]]
+   * @param logQuery refer to [[Request.LogQuery]]
    * @return [[Response.Log]], refer to https://eth.wiki/json-rpc/API#eth_getLogs
    */
   final def getLogs(logQuery: LogQuery): F[Deferred[F, List[Response.Log]]] =

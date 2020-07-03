@@ -5,7 +5,7 @@ import io.circe._
 
 /**
  * [[Request.id]] and [[Response.id]], [[Id]] at here
- * because of we overwrite [[Decoder]] for Long at [[implicits]]
+ * because of we overwrite decoder for Long at ethabi.implicits
  *
  * @param value the id value
  */

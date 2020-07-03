@@ -32,7 +32,7 @@ trait Contract[F[_]] {
 
   /**
    * deploy contract to ethereum, [[address]] will be set after deploy succeed,
-   * and [[creator]] will be set with [[CallArgs.sender]]
+   * and [[creator]] will be set with CallArgs.sender
    *
    * @param args deploy transaction data
    * @return     deploy transaction hash, which can used to get receipt if deploy failed

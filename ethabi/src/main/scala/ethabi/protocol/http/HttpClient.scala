@@ -47,7 +47,7 @@ object HttpClient {
           response <- client.expect[Response](request)
           result   <- response.convertTo[R, F]
           promise  <- Deferred[F, R]
-          _ <- promise.complete(result)
+          _        <- promise.complete(result)
         } yield promise
 
       }

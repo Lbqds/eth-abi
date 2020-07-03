@@ -11,29 +11,29 @@ trait Subscriber[F[_]] { self: Client[F] =>
   /**
    * subscribe new headers from ethereum client
    *
-   * @return [[SubscriptionResult]]
+   * @return [[Subscription.SubscriptionResult]]
    */
   def subscribeNewHeaders(): F[SubscriptionResult[F, Header]]
 
   /**
-   * subscribe logs from ethereum client with [[LogQuery]]
+   * subscribe logs from ethereum client with [[Request.LogQuery]]
    *
-   * @param logQuery refer to [[LogQuery]]
-   * @return [[SubscriptionResult]]
+   * @param logQuery refer to [[Request.LogQuery]]
+   * @return [[Subscription.SubscriptionResult]]
    */
   def subscribeLogs(logQuery: LogQuery): F[SubscriptionResult[F, Log]]
 
   /**
    * subscribe new pending transactions from ethereum
    *
-   * @return [[SubscriptionResult]]
+   * @return [[Subscription.SubscriptionResult]]
    */
   def subscribeNewPendingTransactions(): F[SubscriptionResult[F, String]]
 
   /**
    * subscribe ethereum block sync status
    *
-   * @return [[SubscriptionResult]]
+   * @return [[Subscription.SubscriptionResult]]
    */
   def subscribeSyncStatus(): F[SubscriptionResult[F, SyncStatus]]
 
