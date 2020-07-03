@@ -12,8 +12,8 @@ object Main extends App {
   val cmdParser = {
     import builder._
     OParser.sequence(
-      programName("abi-codegen"),
-      head("abi-codegen", "0.2.0"),
+      programName("abi-codegen-0.3.0"),
+      head("abi-codegen-0.3.0"),
       opt[Unit]('i', "interactive")
         .optional()
         .action((_, params) => params.copy(interactive = true))
