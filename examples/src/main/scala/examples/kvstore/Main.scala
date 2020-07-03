@@ -9,42 +9,8 @@ import ethabi.protocol.Request._
 import ethabi.protocol.Response._
 import retry.RetryPolicies
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 object Main extends IOApp {
-
-  /*
-  private val _ = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool(
-    new NamedThreadFactory("ec1", true)
-  ))
-   */
-
-  private val _ = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool(
-    new NamedThreadFactory("ec2", true)
-  ))
-
-  // from ZIO
-  class NamedThreadFactory(name: String, daemon: Boolean) extends ThreadFactory {
-
-    private val parentGroup = Option(System.getSecurityManager).fold(Thread.currentThread().getThreadGroup)(_.getThreadGroup)
-
-    private val threadGroup = new ThreadGroup(parentGroup, name)
-    private val threadCount = new AtomicInteger(1)
-    private val threadHash = Integer.toUnsignedString(this.hashCode())
-
-    override def newThread(r: Runnable): Thread = {
-      val newThreadNumber = threadCount.getAndIncrement()
-
-      val thread = new Thread(threadGroup, r)
-      thread.setName(s"$name-$newThreadNumber-$threadHash")
-      thread.setDaemon(daemon)
-
-      thread
-    }
-  }
 
   private def log(str: String): IO[Unit] = IO.delay(println(s"${Thread.currentThread.getName}, $str"))
 
@@ -86,7 +52,7 @@ object Main extends IOApp {
           _.isDefined
         ).map(_.get)
         _          <- log(s"tx receipt: $receipt")
-        result     <- kvStore.get(Uint16(12), sender, transactionOpt)    // NOTE: will block at here
+        result     <- kvStore.get(Uint16(12), sender, transactionOpt)
         _          <- log(s"key: 12, value: $result")
         _          <- fiber.cancel
         _          <- log("quit now")
