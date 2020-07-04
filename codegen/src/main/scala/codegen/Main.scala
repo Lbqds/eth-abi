@@ -3,6 +3,8 @@ package codegen
 import ethabi.util
 import scopt.OParser
 
+import scala.util.control.NonFatal
+
 object Main extends App {
   final case class Params(interactive: Boolean = false, abiFile: String = "", binFile: Option[String] = None, packages: String = "", className: String = "", output: String = "")
 
@@ -10,8 +12,8 @@ object Main extends App {
   val cmdParser = {
     import builder._
     OParser.sequence(
-      programName("abi-codegen"),
-      head("abi-codegen", "0.2.0"),
+      programName("abi-codegen-0.3.0"),
+      head("abi-codegen-0.3.0"),
       opt[Unit]('i', "interactive")
         .optional()
         .action((_, params) => params.copy(interactive = true))
@@ -50,11 +52,15 @@ object Main extends App {
   }
 
   def generate(params: Params): Unit = {
-    val header = "// AUTO GENERATED, DO NOT EDIT\n\n"
-    val code = Codegen.codeGen(params.abiFile, params.binFile, params.packages.split('.').toList, params.className)
-    val path = params.output + "/" + params.packages.split('.').mkString("/")
-    val fileName = s"${params.className}.scala"
-    util.writeToFile(path, fileName, header + code.syntax)
+    try {
+      val header = "// AUTO GENERATED, DO NOT EDIT\n\n"
+      val code = Codegen.codeGen(params.abiFile, params.binFile, params.packages.split('.').toList, params.className)
+      val path = params.output + "/" + params.packages.split('.').mkString("/")
+      val fileName = s"${params.className}.scala"
+      util.writeToFile(path, fileName, header + code.syntax)
+    } catch {
+      case NonFatal(exp) => println(s"ERROR: $exp")
+    }
   }
 
   OParser.parse(cmdParser, args, Params()) match {
