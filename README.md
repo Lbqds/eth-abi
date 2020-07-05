@@ -49,6 +49,20 @@ object Main extends IOApp {
     val transactionOpt = TransactionOpt(Some(400000), Some(1000), None, None)
     val retryPolicy = retry.RetryPolicies.limitRetries[IO](5).join(RetryPolicies.constantDelay[IO](5 seconds))
     KVStore[IO]("ws://127.0.0.1:8546").use { kvStore =>
+
+      def setAndAwait(key: Uint16, value: DynamicBytes): IO[TransactionReceipt] = {
+        for {
+          client  <- kvStore.client
+          txHash  <- kvStore.set(key, value, sender, transactionOpt).flatMap(_.get)
+          receipt <- retryUntil[IO, Option[TransactionReceipt]](
+            "wait tx receipt",
+            retryPolicy,
+            client.getTransactionReceipt(txHash).flatMap(_.get),
+            _.isDefined
+          ).map(_.get)
+        } yield receipt
+      }
+
       val task = for {
         client     <- kvStore.client
         peerCount  <- client.peerCount.flatMap(_.get)
@@ -70,18 +84,11 @@ object Main extends IOApp {
         _          <- log(s"contract deploy tx: ${contractTx.get}")
         result     <- kvStore.subscribeRecord
         _          <- log(s"subscription id: ${result.id}")
-        fiber      <- result.stream.forall { event =>
-          println(event)
-          true
-        }.compile.drain.start
-        txHash     <- kvStore.set(Uint16(12), DynamicBytes.from("0x010203040506070809"), sender, transactionOpt).flatMap(_.get)
-        receipt    <- retryUntil[IO, Option[TransactionReceipt]](
-          "wait tx receipt",
-          retryPolicy,
-          client.getTransactionReceipt(txHash).flatMap(_.get),
-          _.isDefined
-        ).map(_.get)
-        _          <- log(s"tx receipt: $receipt")
+        fiber      <- result.stream.map(println).compile.drain.start
+        receipt1   <- setAndAwait(Uint16(12), DynamicBytes.from("0x010203040506070809"))
+        _          <- log(s"tx receipt: $receipt1")
+        receipt2   <- setAndAwait(Uint16(13), DynamicBytes.from("0xff001122334455aabbccddee"))
+        _          <- log(s"tx receipt: $receipt2")
         result     <- kvStore.get(Uint16(12), sender, transactionOpt)
         _          <- log(s"key: 12, value: $result")
         _          <- fiber.cancel
