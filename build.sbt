@@ -89,6 +89,7 @@ lazy val ethabi =
     .settings(name := "ethabi")
     .settings(Dependencies.deps)
     .settings(publishSettings)
+    .settings(addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full))
     .settings(
       unmanagedSourceDirectories in Compile += {
         CrossVersion.partialVersion(scalaVersion.value) match {

@@ -17,16 +17,18 @@ import org.http4s.Uri
 import org.http4s.circe
 import org.http4s.{ Request => HttpRequest }
 
-abstract class HttpClient[F[_]] extends Client[F]
+abstract class HttpClient[F[_]] extends Client[F, HttpClient.HttpResponse]
 
 object HttpClient {
+  type HttpResponse[F[_], T] = T
+
   def apply[F[_]: ConcurrentEffect](endpoint: String)(implicit CS: ContextShift[F]): Resource[F, HttpClient[F]] = {
     val httpClient = for {
       requestId <- Ref.of[F, Long](0)
       client    <- JdkHttpClient.simple[F]
     } yield new HttpClient[F] {
 
-      override def doRequest[R: Decoder](request: Request): F[Deferred[F, R]] = {
+      override def doRequest[R: Decoder](request: Request): F[HttpResponse[F, R]] = {
         implicit val responseDecoder: EntityDecoder[F, Response] = circe.jsonOf[F, Response]
         implicit val requestEncoder: EntityEncoder[F, Request] = circe.jsonEncoderOf[F, Request]
 
@@ -46,9 +48,7 @@ object HttpClient {
           request  <- requestF(id)
           response <- client.expect[Response](request)
           result   <- response.convertTo[R, F]
-          promise  <- Deferred[F, R]
-          _        <- promise.complete(result)
-        } yield promise
+        } yield result
 
       }
     }

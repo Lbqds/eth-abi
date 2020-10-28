@@ -39,6 +39,7 @@ object Codegen {
           import ethabi.types._
           import ethabi.types.generated._
           import ethabi.protocol._
+          import ethabi.protocol.ws.WebsocketClient
           import ethabi.protocol.Request._
           import ethabi.protocol.Response.Log
           import ethabi.protocol.Subscription.SubscriptionResult
@@ -50,7 +51,7 @@ object Codegen {
           final class $typeName[F[_]: ConcurrentEffect: Timer] private (private val impl: Contract[F]) { self =>
             private val binary = ${Lit.String(binCodeStr)}
 
-            def client: F[Client[F]] = impl.client
+            def client: F[WebsocketClient[F]] = impl.client
             def subscriber: F[Subscriber[F]] = impl.subscriber
             def isDeployed: F[Boolean] = impl.isDeployed
             def address: F[Option[Address]] = impl.address

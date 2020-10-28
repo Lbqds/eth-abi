@@ -7,7 +7,7 @@ import ethabi.protocol.Response._
 import Subscription.SubscriptionResult
 import Subscription.SubscriptionId
 
-trait Subscriber[F[_]] { self: Client[F] =>
+trait Subscriber[F[_]] {
   /**
    * subscribe new headers from ethereum client
    *

@@ -20,7 +20,7 @@ trait Contract[F[_]] {
   def isDeployed: F[Boolean]
 
   // get underling client, which can used to call all ethereum jsonrpc api
-  def client: F[Client[F]]
+  def client: F[WebsocketClient[F]]
 
   def subscriber: F[Subscriber[F]]
 
@@ -56,7 +56,7 @@ object Contract {
 
   def apply[F[_]: ConcurrentEffect: Timer](endpoint: String)(implicit CS: ContextShift[F]): Resource[F, Contract[F]] = {
 
-    val newContract: Subscriber[F] with Client[F] => F[Contract[F]] = cli => for {
+    val newContract: WebsocketClient[F] => F[Contract[F]] = cli => for {
       contractorCreatorR <- Ref.of[F, Option[Address]](None)
       contractAddressR <- Ref.of[F, Option[Address]](None)
     } yield new Contract[F] {
@@ -67,7 +67,7 @@ object Contract {
 
       override def address: F[Option[Address]] = contractAddressR.get
 
-      override def client: F[Client[F]] = Applicative[F].pure(cli)
+      override def client: F[WebsocketClient[F]] = Applicative[F].pure(cli)
 
       override def subscriber: F[Subscriber[F]] = Applicative[F].pure(cli)
 
