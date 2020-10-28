@@ -14,7 +14,7 @@ import io.circe.jawn
 import org.http4s.Uri
 import org.http4s.client.jdkhttpclient._
 
-abstract class WebsocketClient[F[_]] extends Client[F] with Subscriber[F] {
+abstract class WebsocketClient[F[_]] extends Client[F, Deferred] with Subscriber[F] {
   private[ws] def terminate: F[Unit]
 }
 

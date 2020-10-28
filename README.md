@@ -124,15 +124,15 @@ object HttpClientTest extends IOApp {
 
     apply[IO]("http://127.0.0.1:8545").use { client =>
       for {
-        cVersion  <- client.clientVersion.flatMap(_.get)
+        cVersion  <- client.clientVersion
         _         <- IO.delay(println(s"client version: $cVersion"))
-        nVersion  <- client.netVersion.flatMap(_.get)
+        nVersion  <- client.netVersion
         _         <- IO.delay(println(s"net version: $nVersion"))
-        filterId  <- client.newBlockFilter.flatMap(_.get)
+        filterId  <- client.newBlockFilter
         _         <- IO.delay(println(s"filter id: $filterId"))
-        changes1  <- IO.sleep(3 seconds) *> client.getFilterChangeHashes(filterId).flatMap(_.get)
+        changes1  <- IO.sleep(3 seconds) *> client.getFilterChangeHashes(filterId)
         _         <- IO.delay(println(s"changes: $changes1"))
-        changes2  <- IO.sleep(3 seconds) *> client.getFilterChangeHashes(filterId).flatMap(_.get)
+        changes2  <- IO.sleep(3 seconds) *> client.getFilterChangeHashes(filterId)
         _         <- IO.delay(println(s"changes: $changes2"))
       } yield ExitCode.Success
     }
